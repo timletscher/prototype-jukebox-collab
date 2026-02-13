@@ -10,17 +10,17 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "next": "14.0.0",
+    "howler": "2.2.3",
+    "next": "^16.1.6",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "zustand": "4.4.0",
-    "howler": "2.2.3"
+    "zustand": "4.4.0"
   },
   "devDependencies": {
-    "typescript": "5.5.0",
-    "@types/react": "18.2.21",
     "@types/node": "20.4.2",
+    "@types/react": "18.2.21",
     "eslint": "8.48.0",
-    "eslint-config-next": "14.0.0"
+    "eslint-config-next": "14.0.0",
+    "typescript": "^5.9.3"
   }
 }
