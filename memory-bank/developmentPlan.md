@@ -1,3 +1,50 @@
+# Phase 1 — Development Plan
+
+## Overview
+Phase 1 builds the minimal, testable backend and completes the UI skeleton into a working feature: a shared jukebox queue where users can add and remove items. Previews will be validated using Vercel PR previews (no local preview tasks).
+
+## Objectives
+- Wire UI to a simple API surface and persistent storage (SQLite/Postgres or file-backed for the prototype).
+- Add CI checks (lint, typecheck, build, tests) so PR previews are trustworthy.
+- Define clear acceptance criteria and deliver a Phase 1 PR with Vercel preview.
+
+## Scope
+- Backend: small REST API under `src/app/api` (or `src/pages/api`) that supports: list queue, add item, remove item, clear queue.
+- Persistence: lightweight (SQLite via Prisma) or JSON-file adapter for prototype; keep migration path clear.
+- Frontend: connect `SearchPanel` and `QueuePanel` to API calls; keep `useJukeboxStore` as a client cache and sync with server state.
+- Tests: unit tests for store and API handlers, and component smoke tests for main flows.
+
+## Milestones & Acceptance Criteria
+
+**Milestone 1 — API + persistence scaffold**
+- Implement endpoints: GET `/api/queue`, POST `/api/queue`, DELETE `/api/queue/:id`, POST `/api/queue/clear`.
+- Persistence saves and returns `QueueItem[]` across restarts.
+- CI: `npm run build` and `npm run lint` pass.
+
+**Acceptance Criteria (Phase 1)**
+- Vercel PR preview shows the app; adding an item in `SearchPanel` triggers a server POST and the queue updates and persists between refreshes.
+- Removing and clearing items update server state and UI accordingly.
+- Basic automated tests (unit + API) pass in CI.
+
+**Milestone 2 — Tests & CI**
+- Add Jest + React Testing Library tests for store and components.
+- Add GitHub Actions workflow that runs: install, lint, typecheck, build, and tests.
+- PR preview must include workflow results for verification.
+
+## Tasks (short)
+1. Define API shape and shared TypeScript DTOs (`src/types/jukebox.ts`) — 0.5 day
+2. Implement API handlers + persistence adapter (SQLite/Prisma or JSON file) — 1–2 days
+3. Wire frontend to API (fetch/POST/DELETE) and make `useJukeboxStore` sync with server — 1 day
+4. Add tests for store & API — 1 day
+5. Add GitHub Actions workflow and verify Vercel preview — 0.5 day
+
+## Implementation notes
+- Use Vercel preview URLs as canonical PR previews; avoid adding local preview steps to the plan.
+- Keep the API surface minimal and well-typed. Move `QueueItem` to `src/types/jukebox.ts` and import it in both server and client code where useful.
+- For rapid prototyping prefer a JSON-file adapter; for a more realistic prototype use SQLite + Prisma (migration-friendly).
+
+## Recommended next step
+- I can scaffold the API handlers and a simple JSON-file persistence adapter now (fast), or scaffold Prisma+SQLite (more setup but robust). Which do you prefer?
 # Development Plan — Jukebox
 
 Goal: phased plan to deliver an MVP and progressive enhancements. Timeline targets ~48 days (adjustable).

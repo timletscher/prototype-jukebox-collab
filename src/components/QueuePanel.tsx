@@ -2,9 +2,11 @@
 
 import React from "react";
 import useJukeboxStore, { QueueItem } from "../lib/jukeboxStore";
+import { deleteQueueItem, fetchQueue, clearQueue as apiClearQueue } from "../lib/api";
 
 function QueueItemView({ item }: { item: QueueItem }) {
-  const removeItem = useJukeboxStore((s) => s.removeItem);
+  const removeItemLocal = useJukeboxStore((s) => s.removeItem);
+  const setQueue = useJukeboxStore((s) => s.setQueue);
   return (
     <div style={{ display: "flex", gap: 8, alignItems: "center", padding: 8, borderBottom: "1px solid #f4f4f4" }}>
       <div style={{ flex: 1 }}>
@@ -12,7 +14,22 @@ function QueueItemView({ item }: { item: QueueItem }) {
         <div style={{ fontSize: 12, color: "#666" }}>{item.artist}</div>
       </div>
       <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={() => removeItem(item.id)}>Remove</button>
+        <button
+          onClick={async () => {
+            try {
+              await deleteQueueItem(item.id);
+              const latest = await fetchQueue();
+              setQueue(latest);
+            } catch (err) {
+              // fallback to local removal on error
+              // eslint-disable-next-line no-console
+              console.error('delete failed, falling back to local remove', err);
+              removeItemLocal(item.id);
+            }
+          }}
+        >
+          Remove
+        </button>
       </div>
     </div>
   );
@@ -20,7 +37,7 @@ function QueueItemView({ item }: { item: QueueItem }) {
 
 export default function QueuePanel() {
   const queue = useJukeboxStore((s) => s.queue);
-  const clearQueue = useJukeboxStore((s) => s.clearQueue);
+  const setQueue = useJukeboxStore((s) => s.setQueue);
 
   return (
     <div style={{ padding: 12, border: "1px solid #eee" }}>
@@ -37,7 +54,19 @@ export default function QueuePanel() {
         )}
       </div>
       <div style={{ marginTop: 8 }}>
-        <button onClick={() => clearQueue()}>Clear Queue</button>
+        <button
+          onClick={async () => {
+            try {
+              await apiClearQueue();
+              setQueue([]);
+            } catch (err) {
+              // eslint-disable-next-line no-console
+              console.error('clear failed', err);
+            }
+          }}
+        >
+          Clear Queue
+        </button>
       </div>
     </div>
   );

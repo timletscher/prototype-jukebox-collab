@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import useJukeboxStore from "../lib/jukeboxStore";
+import { addQueueItem, fetchQueue } from "../lib/api";
 
 const MOCK_RESULTS: Array<{ id: string; title: string; artist?: string }> = [
   { id: "1", title: "Song A", artist: "Artist 1" },
@@ -11,7 +12,7 @@ const MOCK_RESULTS: Array<{ id: string; title: string; artist?: string }> = [
 
 export default function SearchPanel() {
   const [query, setQuery] = useState("");
-  const addItem = useJukeboxStore((s) => s.addItem);
+  const setQueue = useJukeboxStore((s) => s.setQueue);
   const user = useJukeboxStore((s) => s.user) || "anonymous";
 
   const results = MOCK_RESULTS.filter((r) =>
@@ -36,9 +37,16 @@ export default function SearchPanel() {
               <div style={{ fontSize: 12, color: "#666" }}>{r.artist}</div>
             </div>
             <button
-              onClick={() =>
-                addItem({ id: `${r.id}-${Date.now()}`, title: r.title, artist: r.artist, addedBy: user })
-              }
+              onClick={async () => {
+                try {
+                  await addQueueItem({ title: r.title, addedBy: user });
+                  const latest = await fetchQueue();
+                  setQueue(latest);
+                } catch (err) {
+                  // eslint-disable-next-line no-console
+                  console.error('add failed', err);
+                }
+              }}
             >
               Add
             </button>
