@@ -1,0 +1,37 @@
+name: Vercel Preview Deploy
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+jobs:
+  vercel-preview:
+    name: Build and deploy preview to Vercel
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy to Vercel (preview)
+        uses: amondnet/vercel-action@v20
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-args: '--confirm'
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Output preview URL
+        if: success()
+        run: echo "Preview deployment requested — check Vercel dashboard or PR checks for URL."

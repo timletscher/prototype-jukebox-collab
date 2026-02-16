@@ -1,0 +1,10 @@
+node_modules
+.git
+.vscode
+.idea
+*.log
+.env
+.env.local
+.env.*.local
+coverage
+dist
