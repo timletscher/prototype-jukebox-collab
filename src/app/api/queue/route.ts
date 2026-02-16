@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import prisma from '~/src/server/prisma';
-import type { QueueItem } from '~/src/types/jukebox';
+import prisma from '../../../server/prisma';
+import type { QueueItem } from '../../../types/jukebox';
 
 export async function GET() {
   const items = await prisma.queueItem.findMany({ orderBy: { createdAt: 'asc' } });

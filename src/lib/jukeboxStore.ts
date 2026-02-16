@@ -1,13 +1,9 @@
 "use client";
 
 import create from "zustand";
+import type { QueueItem as ApiQueueItem } from "../types/jukebox";
 
-export type QueueItem = {
-  id: string;
-  title: string;
-  artist?: string;
-  addedBy?: string;
-};
+export type QueueItem = ApiQueueItem;
 
 export type JukeboxState = {
   user?: string;

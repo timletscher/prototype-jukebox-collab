@@ -1,4 +1,4 @@
-import type { QueueItem } from '~/src/types/jukebox';
+import type { QueueItem } from '../types/jukebox';
 
 const base = '/api/queue';
 
