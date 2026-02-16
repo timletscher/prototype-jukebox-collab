@@ -55,4 +55,4 @@ jobs:
       - name: Run integration tests
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
-        run: npx jest --runInBand --testPathPattern=tests/integration || true
+        run: npm run test:integration
