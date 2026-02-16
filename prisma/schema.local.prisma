@@ -1,0 +1,19 @@
+// Local SQLite schema (for dev fallback)
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Copy of your models from prisma/schema.prisma
+model QueueItem {
+  id        String   @id @default(cuid())
+  title     String
+  url       String?
+  addedBy   String?
+  createdAt DateTime @default(now())
+  order     Int      @default(0)
+}
