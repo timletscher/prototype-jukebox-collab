@@ -54,10 +54,10 @@ export default function QueuePanel() {
             artist: ((i as Record<string, unknown>)['artist'] ?? null) as string | null,
           }));
           if (mounted) setQueue(mapped);
-        } catch {
-        // eslint-disable-next-line no-console
-        console.error('failed to fetch queue on mount', err);
-      }
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.error('failed to fetch queue on mount', err);
+        }
     })();
     return () => { mounted = false; };
   }, [setQueue]);

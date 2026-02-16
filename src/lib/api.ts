@@ -3,9 +3,20 @@ import type { QueueItem } from '../types/jukebox';
 const base = '/api/queue';
 
 export async function fetchQueue(): Promise<QueueItem[]> {
-  const res = await fetch(base);
-  if (!res.ok) throw new Error('failed to fetch queue');
-  return res.json();
+  try {
+    const res = await fetch(base);
+    if (!res.ok) {
+      // don't throw — return empty queue to keep UI resilient
+      // eslint-disable-next-line no-console
+      console.warn('fetchQueue: non-OK response', res.status);
+      return [];
+    }
+    return res.json();
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('fetchQueue failed', err);
+    return [];
+  }
 }
 
 export async function addQueueItem(payload: { title: string; url?: string | null; addedBy?: string | null }) {
