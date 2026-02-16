@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model QueueItem {
@@ -15,14 +15,9 @@ model QueueItem {
   createdAt DateTime @default(now())
   order     Int?
   // processing state for safer worker semantics
-  status    QueueStatus @default(PENDING)
+  // stored as string in SQLite; treat as enum-like in application code
+  status    String @default("PENDING")
   attempts  Int @default(0)
   lastAttemptAt DateTime?
 }
 
-enum QueueStatus {
-  PENDING
-  PROCESSING
-  DONE
-  FAILED
-}
