@@ -16,4 +16,10 @@ model QueueItem {
   addedBy   String?
   createdAt DateTime @default(now())
   order     Int      @default(0)
+  // status stored as text in SQLite local fallback
+  status    String @default("PENDING")
+  attempts  Int @default(0)
+  lastAttemptAt DateTime?
 }
+
+// Note: Postgres schema uses a native enum. Local SQLite stores `status` as text.

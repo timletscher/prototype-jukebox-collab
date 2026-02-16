@@ -13,5 +13,16 @@ model QueueItem {
   url       String?
   addedBy   String?
   createdAt DateTime @default(now())
-  order     Int?     
+  order     Int?
+  // processing state for safer worker semantics
+  status    QueueStatus @default(PENDING)
+  attempts  Int @default(0)
+  lastAttemptAt DateTime?
+}
+
+enum QueueStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
 }
