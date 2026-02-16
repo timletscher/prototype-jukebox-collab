@@ -17,7 +17,7 @@ What changed
 Verification
 - Local: `npm install`, `npm run typecheck`, and `npm run build` all completed successfully.
 - Local dev: `npm run dev` runs and served the app; smoke test HTML captured.
-- Remote: Vercel preview now installs and deploys successfully. Preview URL: <INSERT_PREVIEW_URL_HERE>
+- Remote: Vercel preview now installs and deploys successfully. Preview URL: https://prototype-jukebox-collab-l22c-bvhdh8z77-timslaloms-projects.vercel.app
 
 Follow-ups / TODOs
 - Run `npm audit` and address any critical vulnerabilities.
