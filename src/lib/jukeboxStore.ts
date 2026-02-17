@@ -6,6 +6,13 @@ import { fetchQueue, addQueueItem, deleteQueueItem, clearQueue as apiClearQueue 
 
 export type QueueItem = ApiQueueItem;
 
+export type ActiveUser = {
+  username: string;
+  sessionId: string;
+  lastSeen: number;
+  isAdmin: boolean;
+};
+
 export type JukeboxState = {
   user?: string;
   queue: QueueItem[];
@@ -14,6 +21,9 @@ export type JukeboxState = {
   positionMs: number;
   durationMs: number;
   volume: number;
+  activeUsers: ActiveUser[];
+  activeUserCount: number;
+  lastPresenceAt: number | null;
   setUser: (name: string) => void;
   setQueue: (items: QueueItem[]) => void;
   addItem: (item: QueueItem) => void;
@@ -24,6 +34,7 @@ export type JukeboxState = {
   setPositionMs: (positionMs: number) => void;
   setDurationMs: (durationMs: number) => void;
   setVolume: (volume: number) => void;
+  setActiveUsers: (users: ActiveUser[]) => void;
   // async remote operations
   loadQueue: () => Promise<void>;
   addItemRemote: (payload: { title: string; url?: string | null; addedBy?: string | null }) => Promise<QueueItem>;
@@ -52,6 +63,9 @@ const useJukeboxStore = create<JukeboxState>((set, get) => ({
   positionMs: 0,
   durationMs: 30000,
   volume: getInitialVolume(),
+  activeUsers: [],
+  activeUserCount: 0,
+  lastPresenceAt: null,
   setUser: (name) => set({ user: name }),
   setQueue: (items) => set({ queue: items }),
   addItem: (item) =>
@@ -72,6 +86,8 @@ const useJukeboxStore = create<JukeboxState>((set, get) => ({
       // ignore persistence errors
     }
   },
+  setActiveUsers: (users) =>
+    set({ activeUsers: users, activeUserCount: users.length, lastPresenceAt: Date.now() }),
 
   // async helpers that talk to the server with optimistic updates
   loadQueue: async () => {

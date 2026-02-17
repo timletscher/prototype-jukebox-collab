@@ -1,22 +1,43 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import useJukeboxStore from "../lib/jukeboxStore";
-
-const MOCK_RESULTS: Array<{ id: string; title: string; artist?: string }> = [
-  { id: "1", title: "Song A", artist: "Artist 1" },
-  { id: "2", title: "Song B", artist: "Artist 2" },
-  { id: "3", title: "Song C", artist: "Artist 3" },
-];
+import type { QueueItem } from "../types/jukebox";
+import { searchSongs } from "../lib/api";
 
 export default function SearchPanel() {
   const [query, setQuery] = useState("");
+  const [results, setResults] = useState<QueueItem[]>([]);
+  const [loading, setLoading] = useState(false);
   const addItemRemote = useJukeboxStore((s) => s.addItemRemote);
   const user = useJukeboxStore((s) => s.user) || "anonymous";
 
-  const results = MOCK_RESULTS.filter((r) =>
-    r.title.toLowerCase().includes(query.toLowerCase())
-  );
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (trimmed.length < 2) {
+      setResults([]);
+      setLoading(false);
+      return;
+    }
+    let active = true;
+    setLoading(true);
+    const timer = setTimeout(() => {
+      searchSongs(trimmed)
+        .then((items) => {
+          if (active) setResults(items);
+        })
+        .catch(() => {
+          if (active) setResults([]);
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        });
+    }, 300);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [query]);
 
   return (
     <section className="panel">
@@ -29,16 +50,20 @@ export default function SearchPanel() {
         className="input"
       />
       <ul style={{ marginTop: "var(--spacing-sm)" }}>
+        {loading && <li className="panel-subtitle">Searching...</li>}
+        {!loading && results.length === 0 && query.trim().length >= 2 && (
+          <li className="panel-subtitle">No matches yet.</li>
+        )}
         {results.map((r) => (
           <li key={r.id} className="search-result">
             <div style={{ flex: 1 }}>
               <div className="queue-item-title">{r.title}</div>
-              <div className="search-meta">{r.artist}</div>
+              <div className="search-meta">{r.artist ?? ""}</div>
             </div>
             <button
               onClick={async () => {
                 try {
-                  await addItemRemote({ title: r.title, addedBy: user });
+                  await addItemRemote({ title: r.title, url: r.url ?? null, addedBy: user });
                 } catch (err) {
                   // eslint-disable-next-line no-console
                   console.error("add failed", err);

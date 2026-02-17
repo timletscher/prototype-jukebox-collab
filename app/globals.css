@@ -176,9 +176,22 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: var(--spacing-lg);
+  justify-content: space-between;
   border-bottom: var(--border-thin) solid var(--chrome-dark);
   background: var(--bg-dark);
   box-shadow: var(--shadow-sm);
+}
+
+.app-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+}
+
+.app-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 
 .app-brand {
@@ -196,6 +209,15 @@ button:disabled {
   letter-spacing: 0.12em;
   font-size: var(--text-xs);
   color: var(--text-secondary);
+}
+
+.active-users {
+  font-family: var(--font-display-secondary);
+  font-size: var(--text-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--neon-amber);
+  text-shadow: var(--glow-amber);
 }
 
 .app-shell {

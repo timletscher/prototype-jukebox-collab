@@ -9,3 +9,19 @@ Run locally:
 pnpm install
 pnpm dev
 ```
+
+## Spotify search (server-side)
+
+This project includes a minimal `/api/search` endpoint backed by the Spotify Web API
+using the Client Credentials flow.
+
+Set the following environment variables (server-side only):
+
+```
+SPOTIFY_CLIENT_ID=your_spotify_client_id
+SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
+```
+
+Behavior:
+- `/api/search?q=...` returns an array of `QueueItem`-shaped results.
+- Each result includes `title`, `artist`, and `url` (Spotify `preview_url` when available).

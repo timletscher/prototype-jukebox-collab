@@ -143,6 +143,10 @@ CREATE INDEX idx_users_last_active ON users(last_active DESC);
 - Rate limits: 100 requests per 30 seconds (per client)
 - Response caching to minimize API calls
 
+**Local integration note (current)**
+- `/api/search?q=...` proxies to Spotify with Client Credentials (server-side only).
+- Returns `QueueItem[]` with `title`, `artist`, and `url` (Spotify `preview_url` when available).
+
 **Fallback: Apple Music API**
 - MusicKit JS or REST API
 - Similar endpoints for search and track details

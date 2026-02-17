@@ -40,3 +40,20 @@ export async function clearQueue() {
   if (!res.ok) throw new Error('failed to clear');
   return res.json();
 }
+
+export async function searchSongs(query: string): Promise<QueueItem[]> {
+  if (!query.trim()) return [];
+  try {
+    const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+    if (!res.ok) {
+      // eslint-disable-next-line no-console
+      console.warn('searchSongs: non-OK response', res.status);
+      return [];
+    }
+    return res.json();
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('searchSongs failed', err);
+    return [];
+  }
+}
