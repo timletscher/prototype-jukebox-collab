@@ -25,3 +25,16 @@ SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
 Behavior:
 - `/api/search?q=...` returns an array of `QueueItem`-shaped results.
 - Each result includes `title`, `artist`, and `url` (Spotify `preview_url` when available).
+
+## Presence (Supabase Realtime)
+
+Active user presence uses Supabase Realtime when configured. Set these public
+environment variables for the client:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+If these variables are not set, the client falls back to the HTTP heartbeat at
+`/api/presence`.
