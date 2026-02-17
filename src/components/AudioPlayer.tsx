@@ -233,6 +233,7 @@ export default function AudioPlayer() {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
   const timeLabel = `${formatTime(positionMs)} / ${formatTime(durationMs)}`;
+  const volumeLabel = volume === 0 ? "Mute" : volume < 0.5 ? "Low" : "High";
 
   return (
     <section className="panel player">
@@ -281,6 +282,9 @@ export default function AudioPlayer() {
       </div>
       <canvas ref={canvasRef} className="visualizer" />
       <div className="volume-row">
+        <div className="volume-icon" aria-hidden="true">
+          {volumeLabel}
+        </div>
         <label className="volume-label">Volume</label>
         <input
           type="range"

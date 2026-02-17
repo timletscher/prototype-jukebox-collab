@@ -31,6 +31,19 @@ export type JukeboxState = {
   clearQueueRemote: () => Promise<boolean>;
 };
 
+const getInitialVolume = () => {
+  if (typeof window === "undefined") return 0.6;
+  try {
+    const stored = window.localStorage.getItem("jukebox.volume");
+    if (!stored) return 0.6;
+    const parsed = Number(stored);
+    if (Number.isNaN(parsed)) return 0.6;
+    return Math.min(1, Math.max(0, parsed));
+  } catch {
+    return 0.6;
+  }
+};
+
 const useJukeboxStore = create<JukeboxState>((set, get) => ({
   user: undefined,
   queue: [],
@@ -38,7 +51,7 @@ const useJukeboxStore = create<JukeboxState>((set, get) => ({
   isPlaying: false,
   positionMs: 0,
   durationMs: 30000,
-  volume: 0.6,
+  volume: getInitialVolume(),
   setUser: (name) => set({ user: name }),
   setQueue: (items) => set({ queue: items }),
   addItem: (item) =>
@@ -49,7 +62,16 @@ const useJukeboxStore = create<JukeboxState>((set, get) => ({
   setIsPlaying: (isPlaying) => set({ isPlaying }),
   setPositionMs: (positionMs) => set({ positionMs }),
   setDurationMs: (durationMs) => set({ durationMs }),
-  setVolume: (volume) => set({ volume }),
+  setVolume: (volume) => {
+    const clamped = Math.min(1, Math.max(0, volume));
+    set({ volume: clamped });
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem("jukebox.volume", String(clamped));
+    } catch {
+      // ignore persistence errors
+    }
+  },
 
   // async helpers that talk to the server with optimistic updates
   loadQueue: async () => {

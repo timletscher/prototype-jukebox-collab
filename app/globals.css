@@ -383,6 +383,14 @@ button:disabled {
   color: var(--text-muted);
 }
 
+.volume-icon {
+  font-size: var(--text-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--neon-amber);
+  text-shadow: var(--glow-amber);
+}
+
 .queue-item {
   display: flex;
   gap: var(--spacing-sm);
