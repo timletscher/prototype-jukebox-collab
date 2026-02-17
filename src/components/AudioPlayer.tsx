@@ -24,6 +24,7 @@ export default function AudioPlayer() {
   const startRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
   const tickRef = useRef<() => void>(() => {});
+  const startPlaybackRef = useRef<() => void>(() => {});
 
   const stopOscillator = useCallback(() => {
     if (oscRef.current) {
@@ -76,12 +77,12 @@ export default function AudioPlayer() {
       stopPlayback();
       const advanced = advanceToNext();
       if (advanced) {
-        startPlayback();
+        startPlaybackRef.current();
       }
       return;
     }
     rafRef.current = requestAnimationFrame(() => tickRef.current());
-  }, [advanceToNext, durationMs, setPositionMs, startPlayback, stopPlayback]);
+  }, [advanceToNext, durationMs, setPositionMs, stopPlayback]);
 
   useEffect(() => {
     tickRef.current = tick;
@@ -109,7 +110,11 @@ export default function AudioPlayer() {
     startRef.current = ctx.currentTime;
     setIsPlaying(true);
     rafRef.current = requestAnimationFrame(() => tickRef.current());
-  }, [currentItem, durationMs, setDurationMs, setIsPlaying, tick, volume]);
+  }, [currentItem, durationMs, setDurationMs, setIsPlaying, volume]);
+
+  useEffect(() => {
+    startPlaybackRef.current = startPlayback;
+  }, [startPlayback]);
 
   useEffect(() => {
     return () => {
