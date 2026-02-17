@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '../../../server/prisma';
+import prisma from '../../../../server/prisma';
 
 export async function POST() {
   await prisma.queueItem.deleteMany({});
