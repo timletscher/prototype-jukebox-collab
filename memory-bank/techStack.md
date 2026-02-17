@@ -492,12 +492,18 @@ DATABASE_URL=postgresql://...          # Direct connection
 SUPABASE_URL=https://...               # Supabase
 SUPABASE_ANON_KEY=...
 
+# Supabase Realtime (client)
+NEXT_PUBLIC_SUPABASE_URL=https://...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+
 # Optional
 APPLE_MUSIC_API_KEY=...
 YOUTUBE_MUSIC_API_KEY=...
 
 # Deployment
 NEXT_PUBLIC_APP_URL=https://teamjukebox.app
+
+# Legacy (self-hosted WebSocket)
 NEXT_PUBLIC_WS_URL=wss://teamjukebox.app
 
 # Analytics (optional)

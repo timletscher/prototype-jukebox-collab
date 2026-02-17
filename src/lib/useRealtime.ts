@@ -5,7 +5,7 @@ import type { ActiveUser } from "./jukeboxStore";
 import { getSupabaseClient } from "./supabaseClient";
 
 const HEARTBEAT_MS = 30000;
-const DEFAULT_ROOM = "jukebox";
+const PRESENCE_ROOM = "jukebox";
 
 type PresencePayload = {
   username: string;
@@ -20,7 +20,6 @@ type PresenceOptions = {
   sessionId: string;
   isAdmin: boolean;
   onUsers: (users: ActiveUser[]) => void;
-  room?: string;
 };
 
 export const usePresenceRealtime = ({
@@ -29,7 +28,6 @@ export const usePresenceRealtime = ({
   sessionId,
   isAdmin,
   onUsers,
-  room = DEFAULT_ROOM,
 }: PresenceOptions) => {
   const heartbeatRef = useRef<number | null>(null);
 
@@ -38,7 +36,7 @@ export const usePresenceRealtime = ({
     const supabase = getSupabaseClient();
     if (!supabase) return;
 
-    const channel = supabase.channel(`presence:${room}`, {
+    const channel = supabase.channel(`presence:${PRESENCE_ROOM}`, {
       config: { presence: { key: sessionId } },
     });
 
@@ -86,5 +84,5 @@ export const usePresenceRealtime = ({
       }
       channel.unsubscribe();
     };
-  }, [enabled, isAdmin, onUsers, room, sessionId, username]);
+  }, [enabled, isAdmin, onUsers, sessionId, username]);
 };
