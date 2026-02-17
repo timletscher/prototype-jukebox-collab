@@ -29,6 +29,11 @@ export default function AudioPlayer() {
   const setVolume = useJukeboxStore((s) => s.setVolume);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const visRafRef = useRef<number | null>(null);
   const autoPlayNextRef = useRef(false);
 
   const stopPlayback = useCallback(() => {
@@ -70,6 +75,16 @@ export default function AudioPlayer() {
       if (audioRef.current) {
         audioRef.current.src = "";
       }
+      if (visRafRef.current) {
+        cancelAnimationFrame(visRafRef.current);
+        visRafRef.current = null;
+      }
+      if (audioCtxRef.current) {
+        audioCtxRef.current.close();
+        audioCtxRef.current = null;
+      }
+      analyserRef.current = null;
+      sourceRef.current = null;
     };
   }, [stopPlayback]);
 
@@ -90,6 +105,9 @@ export default function AudioPlayer() {
       return;
     }
     if (!audioRef.current) return;
+    if (audioCtxRef.current) {
+      audioCtxRef.current.resume().catch(() => {});
+    }
     try {
       await audioRef.current.play();
     } catch {
@@ -106,6 +124,17 @@ export default function AudioPlayer() {
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new AudioContext();
+    }
+    const ctx = audioCtxRef.current;
+    if (ctx && !sourceRef.current) {
+      sourceRef.current = ctx.createMediaElementSource(audio);
+      analyserRef.current = ctx.createAnalyser();
+      analyserRef.current.fftSize = 256;
+      sourceRef.current.connect(analyserRef.current);
+      analyserRef.current.connect(ctx.destination);
+    }
     if (!currentItem) {
       audio.pause();
       audio.removeAttribute("src");
@@ -146,6 +175,56 @@ export default function AudioPlayer() {
     }
   };
 
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const analyser = analyserRef.current;
+    if (!canvas || !analyser) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+      canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+    };
+
+    resize();
+    window.addEventListener("resize", resize);
+
+    const bufferLength = analyser.frequencyBinCount;
+    const data = new Uint8Array(bufferLength);
+
+    const draw = () => {
+      analyser.getByteFrequencyData(data);
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      ctx.clearRect(0, 0, width, height);
+      const barWidth = width / bufferLength;
+      for (let i = 0; i < bufferLength; i += 1) {
+        const value = data[i] / 255;
+        const barHeight = value * height;
+        ctx.fillStyle = `rgba(59, 130, 246, ${0.2 + value * 0.8})`;
+        ctx.fillRect(i * barWidth, height - barHeight, barWidth - 1, barHeight);
+      }
+      visRafRef.current = requestAnimationFrame(draw);
+    };
+
+    if (isPlaying) {
+      visRafRef.current = requestAnimationFrame(draw);
+    }
+
+    return () => {
+      window.removeEventListener("resize", resize);
+      if (visRafRef.current) {
+        cancelAnimationFrame(visRafRef.current);
+        visRafRef.current = null;
+      }
+    };
+  }, [currentItem, isPlaying]);
+
   const progressPct = durationMs > 0 ? Math.min((positionMs / durationMs) * 100, 100) : 0;
 
   return (
@@ -157,6 +236,7 @@ export default function AudioPlayer() {
         onEnded={handleEnded}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
+        crossOrigin="anonymous"
       />
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ width: 64, height: 64, background: "#0e1a22", borderRadius: 8 }} />
@@ -186,6 +266,12 @@ export default function AudioPlayer() {
             Load first
           </button>
         </div>
+      </div>
+      <div style={{ marginTop: 10 }}>
+        <canvas
+          ref={canvasRef}
+          style={{ width: "100%", height: 60, background: "#0b1320", borderRadius: 6 }}
+        />
       </div>
       <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 12 }}>
         <label style={{ fontSize: 12, color: "#666" }}>Volume</label>
