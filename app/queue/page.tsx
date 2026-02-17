@@ -1,12 +1,11 @@
 import React from 'react'
-import QueueManager from '../../components/QueueManager'
+import QueuePanel from '../../src/components/QueuePanel'
 
 export default function QueuePage() {
   return (
-    <div style={{ padding: 24 }}>
-      <h1>Queue Admin</h1>
-      <p>Peek, claim and complete queued items (development tool).</p>
-      <QueueManager />
-    </div>
+    <main style={{ padding: 24, maxWidth: 720, margin: '0 auto' }}>
+      <h1>Queue</h1>
+      <QueuePanel />
+    </main>
   )
 }

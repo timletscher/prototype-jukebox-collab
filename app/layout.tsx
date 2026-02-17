@@ -13,7 +13,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <a href="/" style={{ fontWeight: 700, color: 'inherit', textDecoration: 'none' }}>Team Jukebox</a>
           <nav style={{ display: 'flex', gap: 12, marginLeft: 8 }}>
             <a href="/">Home</a>
-            <a href="/queue">Queue (dev)</a>
+            <a href="/queue">Queue</a>
           </nav>
         </header>
         <div style={{ padding: 16 }}>{children}</div>

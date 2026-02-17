@@ -66,6 +66,19 @@ export default function QueuePanel() {
         <button
           onClick={async () => {
             try {
+              await loadQueue();
+            } catch (err) {
+              // eslint-disable-next-line no-console
+              console.error("refresh failed", err);
+            }
+          }}
+          style={{ marginRight: 8 }}
+        >
+          Refresh
+        </button>
+        <button
+          onClick={async () => {
+            try {
               const clearQueueRemote = useJukeboxStore.getState().clearQueueRemote;
               await clearQueueRemote();
             } catch (err) {
