@@ -206,7 +206,7 @@ export default function AudioPlayer() {
       for (let i = 0; i < bufferLength; i += 1) {
         const value = data[i] / 255;
         const barHeight = value * height;
-        ctx.fillStyle = `rgba(59, 130, 246, ${0.2 + value * 0.8})`;
+        ctx.fillStyle = `rgba(0, 240, 255, ${0.2 + value * 0.8})`;
         ctx.fillRect(i * barWidth, height - barHeight, barWidth - 1, barHeight);
       }
       visRafRef.current = requestAnimationFrame(draw);
@@ -226,9 +226,16 @@ export default function AudioPlayer() {
   }, [currentItem, isPlaying]);
 
   const progressPct = durationMs > 0 ? Math.min((positionMs / durationMs) * 100, 100) : 0;
+  const formatTime = (ms: number) => {
+    const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  };
+  const timeLabel = `${formatTime(positionMs)} / ${formatTime(durationMs)}`;
 
   return (
-    <section style={{ padding: 12, border: "1px solid #eee" }}>
+    <section className="panel player">
       <audio
         ref={audioRef}
         onTimeUpdate={handleTimeUpdate}
@@ -238,43 +245,43 @@ export default function AudioPlayer() {
         onPause={() => setIsPlaying(false)}
         crossOrigin="anonymous"
       />
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ width: 64, height: 64, background: "#0e1a22", borderRadius: 8 }} />
+      <div className="player-row">
+        <div className="player-art" />
         <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 600 }}>
+          <div className="player-label">Now Playing</div>
+          <div className="player-title" style={{ marginTop: "var(--spacing-xs)" }}>
             {currentItem ? currentItem.title : "No song selected"}
           </div>
-          <div style={{ fontSize: 12, color: "#666" }}>
+          <div className="player-meta" style={{ marginTop: "var(--spacing-xs)" }}>
             {currentItem?.addedBy ? `Added by ${currentItem.addedBy}` : "Demo tone"}
           </div>
-          <div style={{ height: 6, background: "#e9e9e9", borderRadius: 4, marginTop: 8 }}>
-            <div
-              style={{
-                width: `${progressPct}%`,
-                height: "100%",
-                background: "#3b82f6",
-                borderRadius: 4,
-                transition: "width 100ms linear",
-              }}
-            />
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--spacing-sm)", marginTop: "var(--spacing-sm)" }}>
+            <div className="progress-track">
+              <div
+                className={`progress-fill${isPlaying ? "" : " is-paused"}`}
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+            <div className="time-label">
+              {timeLabel}
+            </div>
           </div>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={handlePlayPause}>{isPlaying ? "Pause" : "Play"}</button>
-          <button onClick={stopPlayback}>Stop</button>
+        <div className="player-controls">
+          <button onClick={handlePlayPause} className="button-primary">
+            {isPlaying ? "Pause" : "Play"}
+          </button>
+          <button onClick={stopPlayback} className="button-ghost">
+            Stop
+          </button>
           <button onClick={handleLoadFromQueue} disabled={queue.length === 0}>
             Load first
           </button>
         </div>
       </div>
-      <div style={{ marginTop: 10 }}>
-        <canvas
-          ref={canvasRef}
-          style={{ width: "100%", height: 60, background: "#0b1320", borderRadius: 6 }}
-        />
-      </div>
-      <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 12 }}>
-        <label style={{ fontSize: 12, color: "#666" }}>Volume</label>
+      <canvas ref={canvasRef} className="visualizer" />
+      <div className="volume-row">
+        <label className="volume-label">Volume</label>
         <input
           type="range"
           min={0}
@@ -284,8 +291,9 @@ export default function AudioPlayer() {
           onChange={(e) => setVolume(Number(e.target.value))}
           aria-label="volume"
           style={{ flex: 1 }}
+          className="range"
         />
-        <div style={{ fontSize: 12, color: "#666", width: 48, textAlign: "right" }}>
+        <div className="time-label">
           {Math.round(volume * 100)}%
         </div>
       </div>

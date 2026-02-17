@@ -6,10 +6,10 @@ import useJukeboxStore, { QueueItem } from "../lib/jukeboxStore";
 function QueueItemView({ item }: { item: QueueItem }) {
   const removeItemRemote = useJukeboxStore((s) => s.removeItemRemote);
   return (
-    <div style={{ display: "flex", gap: 8, alignItems: "center", padding: 8, borderBottom: "1px solid #f4f4f4" }}>
+    <div className="queue-item">
       <div style={{ flex: 1 }}>
-        <div><strong>{item.title}</strong></div>
-        <div style={{ fontSize: 12, color: "#666" }}>{item.artist ?? ""}</div>
+        <div className="queue-item-title">{item.title}</div>
+        <div className="queue-item-artist">{item.artist ?? ""}</div>
       </div>
       <div style={{ display: "flex", gap: 8 }}>
         <button
@@ -21,6 +21,7 @@ function QueueItemView({ item }: { item: QueueItem }) {
               console.error("remove failed", err);
             }
           }}
+          className="button-ghost"
         >
           Remove
         </button>
@@ -49,11 +50,14 @@ export default function QueuePanel() {
   }, [loadQueue]);
 
   return (
-    <div style={{ padding: 12, border: "1px solid #eee" }}>
-      <h4>Queue</h4>
+    <section className="panel">
+      <div className="panel-title">Queue</div>
+      <div className="panel-subtitle" style={{ marginBottom: "var(--spacing-sm)" }}>
+        {queue.length}/25 slots filled
+      </div>
       <div>
         {queue.length === 0 ? (
-          <div style={{ color: "#666" }}>Queue is empty</div>
+          <div className="queue-empty">Queue Empty</div>
         ) : (
           <div>
             {queue.map((q) => (
@@ -62,7 +66,7 @@ export default function QueuePanel() {
           </div>
         )}
       </div>
-      <div style={{ marginTop: 8 }}>
+      <div style={{ marginTop: "var(--spacing-sm)", display: "flex", gap: "var(--spacing-sm)" }}>
         <button
           onClick={async () => {
             try {
@@ -72,7 +76,6 @@ export default function QueuePanel() {
               console.error("refresh failed", err);
             }
           }}
-          style={{ marginRight: 8 }}
         >
           Refresh
         </button>
@@ -86,10 +89,11 @@ export default function QueuePanel() {
               console.error("clear failed", err);
             }
           }}
+          className="button-ghost"
         >
           Clear Queue
         </button>
       </div>
-    </div>
+    </section>
   );
 }

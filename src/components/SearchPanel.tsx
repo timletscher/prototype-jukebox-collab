@@ -19,21 +19,21 @@ export default function SearchPanel() {
   );
 
   return (
-    <div style={{ padding: 12, border: "1px solid #eee" }}>
-      <h4>Search</h4>
+    <section className="panel">
+      <div className="panel-title">Search</div>
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search songs"
         aria-label="search-input"
-        style={{ padding: 8, width: "100%" }}
+        className="input"
       />
-      <ul style={{ marginTop: 8 }}>
+      <ul style={{ marginTop: "var(--spacing-sm)" }}>
         {results.map((r) => (
-          <li key={r.id} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <li key={r.id} className="search-result">
             <div style={{ flex: 1 }}>
-              <strong>{r.title}</strong>
-              <div style={{ fontSize: 12, color: "#666" }}>{r.artist}</div>
+              <div className="queue-item-title">{r.title}</div>
+              <div className="search-meta">{r.artist}</div>
             </div>
             <button
               onClick={async () => {
@@ -44,12 +44,13 @@ export default function SearchPanel() {
                   console.error("add failed", err);
                 }
               }}
+              className="button-primary"
             >
               Add
             </button>
           </li>
         ))}
       </ul>
-    </div>
+    </section>
   );
 }

@@ -102,6 +102,7 @@ export default function QueueManager() {
             onChange={(e) => setWorkerToken(e.target.value)}
             placeholder="paste worker token here"
             style={{ flex: 1 }}
+            className="input"
           />
           <button
             onClick={() => {

@@ -3,11 +3,21 @@ import React from 'react'
 
 export default function AudioPlayer(){
   return (
-    <div style={{marginTop:18,display:'flex',alignItems:'center',gap:12}}>
-      <div style={{width:80,height:80,background:'#0e1a22',borderRadius:8}} />
-      <div style={{flex:1}}>
-        <div style={{fontWeight:600}}>No song playing</div>
-        <div style={{height:6,background:'#052025',borderRadius:4,marginTop:8}} />
+    <div className="panel player" style={{ marginTop: "var(--spacing-md)" }}>
+      <div className="player-row">
+        <div className="player-art" />
+        <div style={{ flex: 1 }}>
+          <div className="player-label">Now Playing</div>
+          <div className="player-title" style={{ marginTop: "var(--spacing-xs)" }}>
+            No song playing
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--spacing-sm)", marginTop: "var(--spacing-sm)" }}>
+            <div className="progress-track">
+              <div className="progress-fill is-paused" style={{ width: "0%" }} />
+            </div>
+            <div className="time-label">0:00 / 0:00</div>
+          </div>
+        </div>
       </div>
     </div>
   )
