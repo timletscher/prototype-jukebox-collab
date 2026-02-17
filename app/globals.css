@@ -91,6 +91,7 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+  transition: color 240ms ease, text-shadow 240ms ease;
 }
 
 a:hover {
@@ -124,10 +125,12 @@ button {
   letter-spacing: 0.08em;
   cursor: pointer;
   box-shadow: var(--shadow-sm);
+  transition: box-shadow 240ms ease, transform 240ms ease, filter 240ms ease;
 }
 
 button:hover:not(:disabled) {
   box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 button:disabled {
@@ -155,6 +158,7 @@ button:disabled {
   background: var(--bg-medium);
   color: var(--text-primary);
   font-family: var(--font-body);
+  transition: border-color 240ms ease, box-shadow 240ms ease;
 }
 
 .input:focus {
@@ -198,6 +202,23 @@ button:disabled {
   padding: var(--spacing-lg);
 }
 
+.chrome-frame {
+  border: var(--border-chrome-mobile) solid transparent;
+  border-image: linear-gradient(135deg, var(--chrome-light), var(--chrome-base), var(--chrome-dark)) 1;
+  border-radius: var(--radius-lg);
+  background: var(--bg-dark);
+  box-shadow: var(--shadow-lg), var(--chrome-highlight);
+  margin: var(--spacing-lg);
+  transition: box-shadow 320ms ease;
+}
+
+@media (min-width: 1024px) {
+  .chrome-frame {
+    border-width: var(--border-chrome);
+    border-radius: var(--radius-xl);
+  }
+}
+
 .page-main {
   padding: var(--spacing-xl);
   max-width: 1200px;
@@ -233,6 +254,12 @@ button:disabled {
   border: var(--border-thin) solid var(--chrome-dark);
   background: var(--bg-dark);
   box-shadow: var(--shadow-md);
+  transition: box-shadow 280ms ease, transform 280ms ease;
+}
+
+.panel:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-1px);
 }
 
 .panel-title {
@@ -254,6 +281,7 @@ button:disabled {
   font-size: var(--text-xl);
   color: var(--neon-pink);
   text-shadow: var(--glow-pink);
+  transition: text-shadow 320ms ease;
 }
 
 .player {
@@ -290,6 +318,7 @@ button:disabled {
   font-size: var(--text-2xl);
   color: var(--neon-cyan);
   text-shadow: var(--glow-cyan);
+  transition: text-shadow 280ms ease;
 }
 
 .player-meta {
@@ -311,7 +340,7 @@ button:disabled {
   height: 100%;
   background: var(--neon-pink);
   box-shadow: var(--glow-pink);
-  transition: width 100ms linear;
+  transition: width 140ms linear, box-shadow 280ms ease;
 }
 
 .progress-fill.is-paused {

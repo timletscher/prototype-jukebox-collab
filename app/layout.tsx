@@ -16,7 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <a href="/queue">Queue</a>
           </nav>
         </header>
-        <div className="app-shell">{children}</div>
+        <div className="app-shell chrome-frame">{children}</div>
       </body>
     </html>
   )
