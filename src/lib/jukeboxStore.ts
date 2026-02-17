@@ -9,11 +9,21 @@ export type QueueItem = ApiQueueItem;
 export type JukeboxState = {
   user?: string;
   queue: QueueItem[];
+  currentItem?: QueueItem;
+  isPlaying: boolean;
+  positionMs: number;
+  durationMs: number;
+  volume: number;
   setUser: (name: string) => void;
   setQueue: (items: QueueItem[]) => void;
   addItem: (item: QueueItem) => void;
   removeItem: (id: string) => void;
   clearQueue: () => void;
+  setCurrentItem: (item?: QueueItem) => void;
+  setIsPlaying: (isPlaying: boolean) => void;
+  setPositionMs: (positionMs: number) => void;
+  setDurationMs: (durationMs: number) => void;
+  setVolume: (volume: number) => void;
   // async remote operations
   loadQueue: () => Promise<void>;
   addItemRemote: (payload: { title: string; url?: string | null; addedBy?: string | null }) => Promise<QueueItem>;
@@ -24,12 +34,22 @@ export type JukeboxState = {
 const useJukeboxStore = create<JukeboxState>((set, get) => ({
   user: undefined,
   queue: [],
+  currentItem: undefined,
+  isPlaying: false,
+  positionMs: 0,
+  durationMs: 30000,
+  volume: 0.6,
   setUser: (name) => set({ user: name }),
   setQueue: (items) => set({ queue: items }),
   addItem: (item) =>
     set((s) => ({ queue: [...s.queue, { ...item, id: item.id || Date.now().toString() }] })),
   removeItem: (id) => set((s) => ({ queue: s.queue.filter((q) => q.id !== id) })),
   clearQueue: () => set({ queue: [] }),
+  setCurrentItem: (item) => set({ currentItem: item }),
+  setIsPlaying: (isPlaying) => set({ isPlaying }),
+  setPositionMs: (positionMs) => set({ positionMs }),
+  setDurationMs: (durationMs) => set({ durationMs }),
+  setVolume: (volume) => set({ volume }),
 
   // async helpers that talk to the server with optimistic updates
   loadQueue: async () => {

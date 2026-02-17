@@ -1,3 +1,4 @@
+import { NextRequest } from 'next/server';
 import prisma from '../../src/server/prisma';
 import { GET as getQueue, POST as postQueue } from '../../app/api/queue/route';
 import { DELETE as deleteQueueItem } from '../../app/api/queue/[id]/route';
@@ -32,10 +33,8 @@ describe('Queue API (integration)', () => {
     expect(items.length).toBe(1);
     expect(items[0].id).toBe(created.id);
 
-    const deleteRes = await deleteQueueItem(
-      new Request(`http://localhost/api/queue/${created.id}`, { method: 'DELETE' }),
-      { params: { id: created.id } }
-    );
+    const deleteReq = new NextRequest(`http://localhost/api/queue/${created.id}`);
+    const deleteRes = await deleteQueueItem(deleteReq, { params: Promise.resolve({ id: created.id }) });
     expect(deleteRes.status).toBe(200);
     const deleteBody = (await deleteRes.json()) as { ok?: boolean };
     expect(deleteBody.ok).toBe(true);
