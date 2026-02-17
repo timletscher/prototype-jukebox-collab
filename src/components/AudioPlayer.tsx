@@ -30,6 +30,7 @@ export default function AudioPlayer() {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const oscilloscopeRef = useRef<HTMLCanvasElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
@@ -177,50 +178,105 @@ export default function AudioPlayer() {
 
   useEffect(() => {
     const canvas = canvasRef.current;
+    const oscilloscopeCanvas = oscilloscopeRef.current;
     const analyser = analyserRef.current;
-    if (!canvas || !analyser) return;
+    if (!canvas || !oscilloscopeCanvas || !analyser) return;
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    const oscCtx = oscilloscopeCanvas.getContext("2d");
+    if (!ctx || !oscCtx) return;
 
     const resize = () => {
-      const rect = canvas.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
       canvas.width = Math.max(1, Math.floor(rect.width * dpr));
       canvas.height = Math.max(1, Math.floor(rect.height * dpr));
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.scale(dpr, dpr);
+
+      const oscRect = oscilloscopeCanvas.getBoundingClientRect();
+      oscilloscopeCanvas.width = Math.max(1, Math.floor(oscRect.width * dpr));
+      oscilloscopeCanvas.height = Math.max(1, Math.floor(oscRect.height * dpr));
+      oscCtx.setTransform(1, 0, 0, 1, 0, 0);
+      oscCtx.scale(dpr, dpr);
     };
 
     resize();
     window.addEventListener("resize", resize);
 
     const bufferLength = analyser.frequencyBinCount;
-    const data = new Uint8Array(bufferLength);
+    const freqData = new Uint8Array(bufferLength);
+    const timeData = new Uint8Array(analyser.fftSize);
+
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     const draw = () => {
-      analyser.getByteFrequencyData(data);
+      analyser.getByteFrequencyData(freqData);
       const width = canvas.clientWidth;
       const height = canvas.clientHeight;
       ctx.clearRect(0, 0, width, height);
       const barWidth = width / bufferLength;
       for (let i = 0; i < bufferLength; i += 1) {
-        const value = data[i] / 255;
+        const value = freqData[i] / 255;
         const barHeight = value * height;
         ctx.fillStyle = `rgba(0, 240, 255, ${0.2 + value * 0.8})`;
         ctx.fillRect(i * barWidth, height - barHeight, barWidth - 1, barHeight);
       }
+
+      analyser.getByteTimeDomainData(timeData);
+      const oscWidth = oscilloscopeCanvas.clientWidth;
+      const oscHeight = oscilloscopeCanvas.clientHeight;
+      oscCtx.clearRect(0, 0, oscWidth, oscHeight);
+      oscCtx.lineWidth = 2;
+      oscCtx.strokeStyle = "rgba(255, 16, 240, 0.9)";
+      oscCtx.beginPath();
+      const sliceWidth = oscWidth / timeData.length;
+      let x = 0;
+      for (let i = 0; i < timeData.length; i += 1) {
+        const value = timeData[i] / 128.0;
+        const y = (value * oscHeight) / 2;
+        if (i === 0) {
+          oscCtx.moveTo(x, y);
+        } else {
+          oscCtx.lineTo(x, y);
+        }
+        x += sliceWidth;
+      }
+      oscCtx.stroke();
+
       visRafRef.current = requestAnimationFrame(draw);
     };
 
-    if (isPlaying) {
+    const startVisualization = () => {
+      if (!isPlaying || prefersReducedMotion.matches) return;
       visRafRef.current = requestAnimationFrame(draw);
+    };
+
+    const stopVisualization = () => {
+      if (visRafRef.current) {
+        cancelAnimationFrame(visRafRef.current);
+        visRafRef.current = null;
+      }
+    };
+
+    const handleMotionChange = () => {
+      stopVisualization();
+      startVisualization();
+    };
+
+    startVisualization();
+    if (prefersReducedMotion.addEventListener) {
+      prefersReducedMotion.addEventListener("change", handleMotionChange);
+    } else if (prefersReducedMotion.addListener) {
+      prefersReducedMotion.addListener(handleMotionChange);
     }
 
     return () => {
       window.removeEventListener("resize", resize);
-      if (visRafRef.current) {
-        cancelAnimationFrame(visRafRef.current);
-        visRafRef.current = null;
+      stopVisualization();
+      if (prefersReducedMotion.removeEventListener) {
+        prefersReducedMotion.removeEventListener("change", handleMotionChange);
+      } else if (prefersReducedMotion.removeListener) {
+        prefersReducedMotion.removeListener(handleMotionChange);
       }
     };
   }, [currentItem, isPlaying]);
@@ -268,7 +324,7 @@ export default function AudioPlayer() {
             </div>
           </div>
         </div>
-        <div className="player-controls">
+        <div className="player-controls" role="group" aria-label="player controls">
           <button onClick={handlePlayPause} className="button-primary">
             {isPlaying ? "Pause" : "Play"}
           </button>
@@ -280,7 +336,13 @@ export default function AudioPlayer() {
           </button>
         </div>
       </div>
-      <canvas ref={canvasRef} className="visualizer" />
+      <div className="visualizer-stack">
+        <canvas ref={canvasRef} className="visualizer" />
+        <canvas
+          ref={oscilloscopeRef}
+          className={`visualizer oscilloscope${isPlaying ? " oscilloscope-playing" : ""}`}
+        />
+      </div>
       <div className="volume-row">
         <div className="volume-icon" aria-hidden="true">
           {volumeLabel}
