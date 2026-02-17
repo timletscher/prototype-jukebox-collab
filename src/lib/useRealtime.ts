@@ -125,12 +125,15 @@ export const useQueueRealtime = ({ enabled = true, onChange }: QueueRealtimeOpti
     if (!channelInfo) return;
 
     const { channel } = channelInfo;
-    const handler = () => onChange();
+    let active = true;
+    const handler = () => {
+      if (active) onChange();
+    };
 
     channel.on("broadcast", { event: QUEUE_EVENT }, handler);
 
     return () => {
-      channel.off("broadcast", { event: QUEUE_EVENT }, handler);
+      active = false;
     };
   }, [enabled, onChange]);
 };
