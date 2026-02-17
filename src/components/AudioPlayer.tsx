@@ -1,9 +1,19 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef } from "react";
+import type { QueueItem } from "../lib/jukeboxStore";
 import useJukeboxStore from "../lib/jukeboxStore";
 
 const DEFAULT_DURATION_MS = 30000;
+const DEMO_AUDIO_SRC =
+  "data:audio/wav;base64," +
+  "UklGRlIAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YY4AAAAA" +
+  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
 export default function AudioPlayer() {
   const queue = useJukeboxStore((s) => s.queue);
@@ -18,36 +28,17 @@ export default function AudioPlayer() {
   const setDurationMs = useJukeboxStore((s) => s.setDurationMs);
   const setVolume = useJukeboxStore((s) => s.setVolume);
 
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const gainRef = useRef<GainNode | null>(null);
-  const oscRef = useRef<OscillatorNode | null>(null);
-  const startRef = useRef<number | null>(null);
-  const rafRef = useRef<number | null>(null);
-  const tickRef = useRef<() => void>(() => {});
-  const startPlaybackRef = useRef<() => void>(() => {});
-
-  const stopOscillator = useCallback(() => {
-    if (oscRef.current) {
-      try {
-        oscRef.current.stop();
-      } catch {
-        // ignore
-      }
-      oscRef.current.disconnect();
-      oscRef.current = null;
-    }
-  }, []);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const autoPlayNextRef = useRef(false);
 
   const stopPlayback = useCallback(() => {
-    stopOscillator();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
     setIsPlaying(false);
     setPositionMs(0);
-    startRef.current = null;
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
-  }, [setIsPlaying, setPositionMs, stopOscillator]);
+  }, [setIsPlaying, setPositionMs]);
 
   const advanceToNext = useCallback(() => {
     if (queue.length === 0) {
@@ -68,71 +59,23 @@ export default function AudioPlayer() {
     return true;
   }, [currentItem, queue, setCurrentItem]);
 
-  const tick = useCallback(() => {
-    if (!audioCtxRef.current || startRef.current === null) return;
-    const elapsed = (audioCtxRef.current.currentTime - startRef.current) * 1000;
-    const next = Math.min(elapsed, durationMs);
-    setPositionMs(next);
-    if (next >= durationMs) {
-      stopPlayback();
-      const advanced = advanceToNext();
-      if (advanced) {
-        startPlaybackRef.current();
-      }
-      return;
-    }
-    rafRef.current = requestAnimationFrame(() => tickRef.current());
-  }, [advanceToNext, durationMs, setPositionMs, stopPlayback]);
-
-  useEffect(() => {
-    tickRef.current = tick;
-  }, [tick]);
-
-  const startPlayback = useCallback(() => {
-    if (!audioCtxRef.current) {
-      audioCtxRef.current = new AudioContext();
-    }
-    const ctx = audioCtxRef.current;
-    const gainNode = gainRef.current ?? ctx.createGain();
-    gainNode.gain.value = volume;
-    gainRef.current = gainNode;
-    gainNode.connect(ctx.destination);
-
-    const osc = ctx.createOscillator();
-    osc.type = "sine";
-    osc.frequency.value = 440;
-    osc.connect(gainNode);
-    osc.start();
-    oscRef.current = osc;
-
-    const duration = currentItem ? durationMs : DEFAULT_DURATION_MS;
-    setDurationMs(duration);
-    startRef.current = ctx.currentTime;
-    setIsPlaying(true);
-    rafRef.current = requestAnimationFrame(() => tickRef.current());
-  }, [currentItem, durationMs, setDurationMs, setIsPlaying, volume]);
-
-  useEffect(() => {
-    startPlaybackRef.current = startPlayback;
-  }, [startPlayback]);
+  const resolveAudioSrc = useCallback((item?: QueueItem) => {
+    if (item?.url) return item.url;
+    return DEMO_AUDIO_SRC;
+  }, []);
 
   useEffect(() => {
     return () => {
       stopPlayback();
-      if (gainRef.current) {
-        gainRef.current.disconnect();
-        gainRef.current = null;
-      }
-      if (audioCtxRef.current) {
-        audioCtxRef.current.close();
-        audioCtxRef.current = null;
+      if (audioRef.current) {
+        audioRef.current.src = "";
       }
     };
   }, [stopPlayback]);
 
   useEffect(() => {
-    if (gainRef.current) {
-      gainRef.current.gain.value = volume;
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
     }
   }, [volume]);
 
@@ -141,12 +84,17 @@ export default function AudioPlayer() {
       stopPlayback();
       return;
     }
+    if (!currentItem && queue.length > 0) {
+      setCurrentItem(queue[0]);
+      autoPlayNextRef.current = true;
+      return;
+    }
+    if (!audioRef.current) return;
     try {
-      await audioCtxRef.current?.resume();
+      await audioRef.current.play();
     } catch {
       // ignore
     }
-    startPlayback();
   };
 
   const handleLoadFromQueue = () => {
@@ -155,10 +103,61 @@ export default function AudioPlayer() {
     setPositionMs(0);
   };
 
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (!currentItem) {
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+      setDurationMs(DEFAULT_DURATION_MS);
+      return;
+    }
+    const nextSrc = resolveAudioSrc(currentItem);
+    if (audio.src !== nextSrc) {
+      audio.src = nextSrc;
+    }
+    audio.load();
+    setPositionMs(0);
+    if (autoPlayNextRef.current) {
+      autoPlayNextRef.current = false;
+      audio.play().catch(() => {});
+    }
+  }, [currentItem, resolveAudioSrc, setDurationMs, setPositionMs]);
+
+  const handleTimeUpdate = () => {
+    if (!audioRef.current) return;
+    setPositionMs(audioRef.current.currentTime * 1000);
+  };
+
+  const handleLoadedMetadata = () => {
+    if (!audioRef.current) return;
+    const duration = Number.isFinite(audioRef.current.duration)
+      ? Math.max(audioRef.current.duration * 1000, DEFAULT_DURATION_MS)
+      : DEFAULT_DURATION_MS;
+    setDurationMs(duration);
+  };
+
+  const handleEnded = () => {
+    setIsPlaying(false);
+    const advanced = advanceToNext();
+    if (advanced) {
+      autoPlayNextRef.current = true;
+    }
+  };
+
   const progressPct = durationMs > 0 ? Math.min((positionMs / durationMs) * 100, 100) : 0;
 
   return (
     <section style={{ padding: 12, border: "1px solid #eee" }}>
+      <audio
+        ref={audioRef}
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={handleEnded}
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+      />
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ width: 64, height: 64, background: "#0e1a22", borderRadius: 8 }} />
         <div style={{ flex: 1 }}>
