@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 import useJukeboxStore, { QueueItem } from "../lib/jukeboxStore";
+import { useQueueRealtime } from "../lib/useRealtime";
 
 function QueueItemView({ item }: { item: QueueItem }) {
   const removeItemRemote = useJukeboxStore((s) => s.removeItemRemote);
@@ -33,9 +34,9 @@ function QueueItemView({ item }: { item: QueueItem }) {
 export default function QueuePanel() {
   const queue = useJukeboxStore((s) => s.queue);
   const loadQueue = useJukeboxStore((s) => s.loadQueue);
+  const refreshQueue = useCallback(() => loadQueue(), [loadQueue]);
 
   useEffect(() => {
-    let mounted = true;
     (async () => {
       try {
         await loadQueue();
@@ -44,10 +45,11 @@ export default function QueuePanel() {
         console.error("failed to load queue on mount", err);
       }
     })();
-    return () => {
-      mounted = false;
-    };
   }, [loadQueue]);
+
+  useQueueRealtime({
+    onChange: refreshQueue,
+  });
 
   return (
     <section className="panel">
@@ -70,7 +72,7 @@ export default function QueuePanel() {
         <button
           onClick={async () => {
             try {
-              await loadQueue();
+              await refreshQueue();
             } catch (err) {
               // eslint-disable-next-line no-console
               console.error("refresh failed", err);
@@ -92,6 +94,19 @@ export default function QueuePanel() {
           className="button-ghost"
         >
           Clear Queue
+        </button>
+        <button
+          onClick={async () => {
+            try {
+              const res = await fetch("/api/queue/test", { method: "POST" });
+              if (!res.ok) throw new Error("test add failed");
+            } catch (err) {
+              // eslint-disable-next-line no-console
+              console.error("test add failed", err);
+            }
+          }}
+        >
+          Add Test Item
         </button>
       </div>
     </section>

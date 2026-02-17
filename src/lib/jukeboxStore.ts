@@ -3,6 +3,7 @@
 import create from "zustand";
 import type { QueueItem as ApiQueueItem } from "../types/jukebox";
 import { fetchQueue, addQueueItem, deleteQueueItem, clearQueue as apiClearQueue } from "./api";
+import { broadcastQueueChange } from "./useRealtime";
 
 export type QueueItem = ApiQueueItem;
 
@@ -113,6 +114,7 @@ const useJukeboxStore = create<JukeboxState>((set, get) => ({
       const created = await addQueueItem(payload);
       // replace temp with created
       set((s) => ({ queue: s.queue.map((q) => (q.id === tempId ? created : q)) }));
+      await broadcastQueueChange();
       return created;
     } catch (err) {
       // rollback
@@ -128,6 +130,7 @@ const useJukeboxStore = create<JukeboxState>((set, get) => ({
     set((s) => ({ queue: s.queue.filter((q) => q.id !== id) }));
     try {
       await deleteQueueItem(id);
+      await broadcastQueueChange();
       return true;
     } catch (err) {
       // rollback by resetting previous queue
@@ -141,6 +144,7 @@ const useJukeboxStore = create<JukeboxState>((set, get) => ({
     set({ queue: [] });
     try {
       await apiClearQueue();
+      await broadcastQueueChange();
       return true;
     } catch (err) {
       set({ queue: prev });
