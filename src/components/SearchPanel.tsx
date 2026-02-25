@@ -1,9 +1,38 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import useJukeboxStore from "../lib/jukeboxStore";
 import type { QueueItem } from "../types/jukebox";
-import { searchSongs } from "../lib/api";
+
+const MOCK_RESULTS: QueueItem[] = [
+  {
+    id: "mock-1",
+    title: "Neon Skyline",
+    artist: "Night Arcade",
+    url: "https://example.com/preview/neon-skyline",
+    addedBy: null,
+    createdAt: "2026-02-25T00:00:00.000Z",
+    order: null,
+  },
+  {
+    id: "mock-2",
+    title: "Pulse Runner",
+    artist: "Chrome Drive",
+    url: "https://example.com/preview/pulse-runner",
+    addedBy: null,
+    createdAt: "2026-02-25T00:00:00.000Z",
+    order: null,
+  },
+  {
+    id: "mock-3",
+    title: "Violet Drift",
+    artist: "Static Bloom",
+    url: "https://example.com/preview/violet-drift",
+    addedBy: null,
+    createdAt: "2026-02-25T00:00:00.000Z",
+    order: null,
+  },
+];
 
 export default function SearchPanel() {
   const [query, setQuery] = useState("");
@@ -12,6 +41,16 @@ export default function SearchPanel() {
   const addItemRemote = useJukeboxStore((s) => s.addItemRemote);
   const user = useJukeboxStore((s) => s.user) || "anonymous";
 
+  const filteredResults = useMemo(() => {
+    const trimmed = query.trim().toLowerCase();
+    if (trimmed.length < 2) return [];
+    return MOCK_RESULTS.filter((item) => {
+      const title = item.title.toLowerCase();
+      const artist = (item.artist ?? "").toLowerCase();
+      return title.includes(trimmed) || artist.includes(trimmed);
+    });
+  }, [query]);
+
   useEffect(() => {
     const trimmed = query.trim();
     if (trimmed.length < 2) {
@@ -19,25 +58,10 @@ export default function SearchPanel() {
       setLoading(false);
       return;
     }
-    let active = true;
     setLoading(true);
-    const timer = setTimeout(() => {
-      searchSongs(trimmed)
-        .then((items) => {
-          if (active) setResults(items);
-        })
-        .catch(() => {
-          if (active) setResults([]);
-        })
-        .finally(() => {
-          if (active) setLoading(false);
-        });
-    }, 300);
-    return () => {
-      active = false;
-      clearTimeout(timer);
-    };
-  }, [query]);
+    setResults(filteredResults);
+    setLoading(false);
+  }, [filteredResults, query]);
 
   return (
     <section className="panel">

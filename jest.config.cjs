@@ -3,16 +3,17 @@
  */
 module.exports = {
   preset: 'ts-jest',
-  testEnvironment: 'node',
-  testMatch: ['**/tests/**/*.spec.ts', '**/tests/**/*.test.ts'],
+  testEnvironment: 'jsdom',
+  testMatch: [
+    '**/tests/**/*.spec.ts',
+    '**/tests/**/*.spec.tsx',
+    '**/tests/**/*.test.ts',
+    '**/tests/**/*.test.tsx'
+  ],
   verbose: true,
-  globals: {
-    'ts-jest': {
-      tsconfig: 'tsconfig.json'
-    }
-  },
   transform: {
-    '^.+\\.(ts|tsx)$': 'ts-jest'
+    '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig: 'tsconfig.json' }]
   },
+  setupFilesAfterEnv: ['<rootDir>/tests/setupTests.ts'],
   testPathIgnorePatterns: ['/node_modules/', '/.next/']
 };

@@ -1,3 +1,4 @@
+/** @jest-environment node */
 import { NextRequest } from 'next/server';
 import prisma from '../../src/server/prisma';
 import { GET as getQueue, POST as postQueue } from '../../app/api/queue/route';

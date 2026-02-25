@@ -1,6 +1,6 @@
 "use client";
 
-import create from "zustand";
+import { create } from "zustand";
 import type { QueueItem as ApiQueueItem } from "../types/jukebox";
 import { fetchQueue, addQueueItem, deleteQueueItem, clearQueue as apiClearQueue } from "./api";
 import { broadcastQueueChange } from "./useRealtime";
