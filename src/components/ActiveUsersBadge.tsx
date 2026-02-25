@@ -79,7 +79,7 @@ export default function ActiveUsersBadge() {
   });
 
   return (
-    <div className="active-users">
+    <div className="active-users" aria-live="polite">
       {user ? `${count} active` : "Guest"}
       {user && activeUsers.length > 0 && (
         <ul className="active-users-list">

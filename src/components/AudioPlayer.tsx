@@ -355,7 +355,7 @@ export default function AudioPlayer() {
   };
 
   return (
-    <section className="panel player">
+    <section className="panel player" aria-labelledby="now-playing-title">
       <audio
         ref={audioRef}
         onTimeUpdate={handleTimeUpdate}
@@ -368,57 +368,70 @@ export default function AudioPlayer() {
       <div className="player-row">
         <div className="player-art" />
         <div style={{ flex: 1 }}>
-          <div className="player-label">Now Playing</div>
-          <div className="player-title" style={{ marginTop: "var(--spacing-xs)" }}>
+          <div className="player-label" id="now-playing-title">Now Playing</div>
+          <div className="player-title" style={{ marginTop: "var(--spacing-xs)" }} aria-live="polite">
             {currentItem ? currentItem.title : "No song selected"}
           </div>
           <div className="player-meta" style={{ marginTop: "var(--spacing-xs)" }}>
             {currentItem?.addedBy ? `Added by ${currentItem.addedBy}` : "Demo tone"}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--spacing-sm)", marginTop: "var(--spacing-sm)" }}>
-            <div className="progress-track">
+            <div
+              className="progress-track"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={Math.max(1, durationMs)}
+              aria-valuenow={Math.min(positionMs, durationMs)}
+              aria-label="Playback progress"
+            >
               <div
                 className={`progress-fill${isPlaying ? "" : " is-paused"}`}
                 style={{ width: `${progressPct}%` }}
               />
             </div>
-            <div className="time-label">
+            <div className="time-label" aria-live="polite">
               {timeLabel}
             </div>
           </div>
         </div>
         <div className="player-controls" role="group" aria-label="player controls">
-          <button onClick={handlePlayPause} className="button-primary">
+          <button type="button" onClick={handlePlayPause} className="button-primary">
             {isPlaying ? "Pause" : "Play"}
           </button>
-          <button onClick={stopPlayback} className="button-ghost">
+          <button type="button" onClick={stopPlayback} className="button-ghost">
             Stop
           </button>
-          <button onClick={handleLoadFromQueue} disabled={queue.length === 0}>
+          <button
+            type="button"
+            onClick={handleLoadFromQueue}
+            disabled={queue.length === 0}
+          >
             Load first
           </button>
         </div>
       </div>
       <div className="visualizer-stack">
-        <canvas ref={canvasRef} className="visualizer" />
+        <canvas ref={canvasRef} className="visualizer" aria-hidden="true" />
         <canvas
           ref={oscilloscopeRef}
           className={`visualizer oscilloscope${isPlaying ? " oscilloscope-playing" : ""}`}
+          aria-hidden="true"
         />
       </div>
       <div className="volume-row">
         <div className="volume-icon" aria-hidden="true">
           {volumeLabel}
         </div>
-        <label className="volume-label">Volume</label>
+        <label className="volume-label" htmlFor="volume-range">Volume</label>
         <input
+          id="volume-range"
           type="range"
           min={0}
           max={1}
           step={0.01}
           value={volume}
           onChange={(e) => setVolume(Number(e.target.value))}
-          aria-label="volume"
+          aria-label="Volume"
           style={{ flex: 1 }}
           className="range"
         />
@@ -439,26 +452,32 @@ export default function AudioPlayer() {
         <div className="player-label">Votes</div>
         <div style={{ display: "flex", gap: "var(--spacing-sm)" }}>
           <button
+            type="button"
             onClick={() => handleVote("thumbsDown")}
             className="button-ghost"
             disabled={!currentSongId || !user}
             aria-pressed={userVote === "thumbsDown"}
+            aria-label={`Thumbs down. ${voteCounts.thumbsDown} votes`}
           >
             👎 {voteCounts.thumbsDown}
           </button>
           <button
+            type="button"
             onClick={() => handleVote("thumbsUp")}
             className="button-ghost"
             disabled={!currentSongId || !user}
             aria-pressed={userVote === "thumbsUp"}
+            aria-label={`Thumbs up. ${voteCounts.thumbsUp} votes`}
           >
             👍 {voteCounts.thumbsUp}
           </button>
           <button
+            type="button"
             onClick={() => handleVote("doubleThumbsUp")}
             className="button-ghost"
             disabled={!currentSongId || !user}
             aria-pressed={userVote === "doubleThumbsUp"}
+            aria-label={`Double thumbs up. ${voteCounts.doubleThumbsUp} votes`}
           >
             👍👍 {voteCounts.doubleThumbsUp}
           </button>

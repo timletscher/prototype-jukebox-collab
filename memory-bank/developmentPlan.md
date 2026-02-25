@@ -117,8 +117,8 @@ Summary timeline (approx): 48 days total
 - Tasks:
   - Implement design tokens across components
   - Add animations and ensure `prefers-reduced-motion` compliance
-  - Accessibility audit (axe) and manual remediation
-  - Visual polish: responsive tweaks, small UX improvements
+  - Accessibility audit (axe) and manual remediation (completed)
+  - Visual polish: responsive tweaks, small UX improvements (completed)
 - Deliverable: accessible, polished UI ready for broader testing.
 
 ## Phase 7 — Testing & CI (Days 39–42)

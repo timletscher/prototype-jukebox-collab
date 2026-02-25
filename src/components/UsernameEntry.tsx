@@ -11,13 +11,16 @@ export default function UsernameEntry() {
   if (user) return null;
 
   return (
-    <div className="panel" style={{ maxWidth: 480 }}>
-      <div className="panel-title">Welcome</div>
+    <div className="panel" style={{ maxWidth: 480 }} aria-labelledby="welcome-title">
+      <div className="panel-title" id="welcome-title">Welcome</div>
       <h3 style={{ fontSize: "var(--text-2xl)", marginBottom: "var(--spacing-sm)" }}>
         Enter a display name
       </h3>
+      <label htmlFor="username-input" className="sr-only">
+        Display name
+      </label>
       <input
-        aria-label="username"
+        id="username-input"
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Your name"
@@ -25,6 +28,7 @@ export default function UsernameEntry() {
       />
       <div style={{ marginTop: "var(--spacing-sm)" }}>
         <button
+          type="button"
           onClick={() => {
             if (name.trim().length > 0) setUser(name.trim());
           }}

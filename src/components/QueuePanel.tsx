@@ -15,14 +15,16 @@ function QueueItemView({
 }) {
   const removeItemRemote = useJukeboxStore((s) => s.removeItemRemote);
   const moveQueueItemRemote = useJukeboxStore((s) => s.moveQueueItemRemote);
+  const songLabel = `${item.title}${item.artist ? ` by ${item.artist}` : ""}`;
   return (
-    <div className="queue-item">
+    <div className="queue-item" role="listitem">
       <div style={{ flex: 1 }}>
         <div className="queue-item-title">{item.title}</div>
         <div className="queue-item-artist">{item.artist ?? ""}</div>
       </div>
       <div style={{ display: "flex", gap: 8 }}>
         <button
+          type="button"
           onClick={async () => {
             try {
               await moveQueueItemRemote(item.id, "up");
@@ -33,10 +35,12 @@ function QueueItemView({
           }}
           className="button-ghost"
           disabled={isFirst}
+          aria-label={`Move ${songLabel} up`}
         >
           Up
         </button>
         <button
+          type="button"
           onClick={async () => {
             try {
               await moveQueueItemRemote(item.id, "down");
@@ -47,10 +51,12 @@ function QueueItemView({
           }}
           className="button-ghost"
           disabled={isLast}
+          aria-label={`Move ${songLabel} down`}
         >
           Down
         </button>
         <button
+          type="button"
           onClick={async () => {
             try {
               await removeItemRemote(item.id);
@@ -60,6 +66,7 @@ function QueueItemView({
             }
           }}
           className="button-ghost"
+          aria-label={`Remove ${songLabel}`}
         >
           Remove
         </button>
@@ -89,16 +96,18 @@ export default function QueuePanel() {
   });
 
   return (
-    <section className="panel">
-      <div className="panel-title">Queue</div>
+    <section className="panel" aria-labelledby="queue-title">
+      <div className="panel-title" id="queue-title">Queue</div>
       <div className="panel-subtitle" style={{ marginBottom: "var(--spacing-sm)" }}>
         {queue.length}/25 slots filled
       </div>
       <div>
         {queue.length === 0 ? (
-          <div className="queue-empty">Queue Empty</div>
+          <div className="queue-empty" role="status" aria-live="polite">
+            Queue Empty
+          </div>
         ) : (
-          <div>
+          <div role="list" aria-label="Queue items">
             {queue.map((q, index) => (
               <QueueItemView
                 key={q.id}
@@ -112,6 +121,7 @@ export default function QueuePanel() {
       </div>
       <div style={{ marginTop: "var(--spacing-sm)", display: "flex", gap: "var(--spacing-sm)" }}>
         <button
+          type="button"
           onClick={async () => {
             try {
               await refreshQueue();
@@ -124,6 +134,7 @@ export default function QueuePanel() {
           Refresh
         </button>
         <button
+          type="button"
           onClick={async () => {
             try {
               const clearQueueRemote = useJukeboxStore.getState().clearQueueRemote;
@@ -138,6 +149,7 @@ export default function QueuePanel() {
           Clear Queue
         </button>
         <button
+          type="button"
           onClick={async () => {
             try {
               const res = await fetch("/api/queue/test", { method: "POST" });

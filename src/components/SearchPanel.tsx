@@ -64,16 +64,23 @@ export default function SearchPanel() {
   }, [filteredResults, query]);
 
   return (
-    <section className="panel">
-      <div className="panel-title">Search</div>
+    <section className="panel" aria-labelledby="search-title">
+      <div className="panel-title" id="search-title">Search</div>
+      <label htmlFor="search-input" className="sr-only">
+        Search songs
+      </label>
       <input
+        id="search-input"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search songs"
-        aria-label="search-input"
+        aria-describedby="search-help"
         className="input"
       />
-      <ul style={{ marginTop: "var(--spacing-sm)" }}>
+      <div id="search-help" className="sr-only">
+        Type at least two characters to see results.
+      </div>
+      <ul style={{ marginTop: "var(--spacing-sm)" }} aria-live="polite">
         {loading && <li className="panel-subtitle">Searching...</li>}
         {!loading && results.length === 0 && query.trim().length >= 2 && (
           <li className="panel-subtitle">No matches yet.</li>
@@ -85,6 +92,7 @@ export default function SearchPanel() {
               <div className="search-meta">{r.artist ?? ""}</div>
             </div>
             <button
+              type="button"
               onClick={async () => {
                 try {
                   await addItemRemote({ title: r.title, url: r.url ?? null, addedBy: user });
@@ -94,6 +102,7 @@ export default function SearchPanel() {
                 }
               }}
               className="button-primary"
+              aria-label={`Add ${r.title}${r.artist ? ` by ${r.artist}` : ""} to queue`}
             >
               Add
             </button>
