@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { QueueItem } from "../lib/jukeboxStore";
 import useJukeboxStore from "../lib/jukeboxStore";
 import { useVoteRealtime } from "../lib/useRealtime";
+import { createHistoryEntry } from "../lib/api";
 
 const DEFAULT_DURATION_MS = 30000;
 const DEMO_AUDIO_SRC =
@@ -204,6 +205,15 @@ export default function AudioPlayer() {
 
   const handleEnded = () => {
     setIsPlaying(false);
+    if (currentItem) {
+      void createHistoryEntry({
+        songId: currentItem.id,
+        title: currentItem.title,
+        artist: currentItem.artist ?? null,
+        addedBy: currentItem.addedBy ?? null,
+        playedAt: new Date().toISOString(),
+      }).catch(() => {});
+    }
     const advanced = advanceToNext();
     if (advanced) {
       autoPlayNextRef.current = true;

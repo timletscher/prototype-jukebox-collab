@@ -102,14 +102,15 @@ Summary timeline (approx): 48 days total
   - Implement `GenreAdminBar`, `SetGenreModal`, and `TransferAdminModal`
   - Admin-only actions behind permission checks in `jukeboxStore`
   - UI flows to set genre and confirm queue transition (completed)
+- Backlog: realtime broadcast for admin/genre changes
 - Deliverable: admin users can modify genre and transfer admin.
 
 ## Phase 5 — Persistence & backend integration (Days 28–33)
 - Tasks:
-  - Implement `/api/search` aggregator with caching layer
-  - Implement Postgres schema (tables in `dataModels.md`) and migrations
-  - Add endpoints for queue persistence and history writes
-  - Integrate with Supabase or Prisma client
+  - Implement `/api/search` aggregator with caching layer (completed)
+  - Implement Postgres schema (tables in `dataModels.md`) and migrations (completed)
+  - Add endpoints for queue persistence and history writes (completed)
+  - Integrate with Supabase or Prisma client (completed via Prisma)
 - Deliverable: data persisted; newly joined clients get persisted queue.
 
 ## Phase 6 — Polish, accessibility & animations (Days 34–38)

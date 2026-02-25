@@ -3,8 +3,32 @@ import type { ApiError, SearchResponse } from "../../../src/types/jukebox";
 
 const TOKEN_URL = "https://accounts.spotify.com/api/token";
 const SEARCH_URL = "https://api.spotify.com/v1/search";
+const SEARCH_TTL_MS = 2 * 60 * 1000;
+const SEARCH_CACHE_MAX = 100;
 
 let cachedToken: { token: string; expiresAt: number } | null = null;
+let searchCache = new Map<string, { expiresAt: number; data: SearchResponse }>();
+
+const getCachedSearch = (query: string) => {
+  const key = query.toLowerCase();
+  const cached = searchCache.get(key);
+  if (!cached) return null;
+  if (cached.expiresAt <= Date.now()) {
+    searchCache.delete(key);
+    return null;
+  }
+  searchCache.delete(key);
+  searchCache.set(key, cached);
+  return cached.data;
+};
+
+const setCachedSearch = (query: string, data: SearchResponse) => {
+  const key = query.toLowerCase();
+  searchCache.set(key, { expiresAt: Date.now() + SEARCH_TTL_MS, data });
+  if (searchCache.size <= SEARCH_CACHE_MAX) return;
+  const firstKey = searchCache.keys().next().value as string | undefined;
+  if (firstKey) searchCache.delete(firstKey);
+};
 
 const getAccessToken = async () => {
   const clientId = process.env.SPOTIFY_CLIENT_ID;
@@ -44,6 +68,9 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const query = searchParams.get("q")?.trim() ?? "";
   if (!query) return NextResponse.json([]);
+
+  const cached = getCachedSearch(query);
+  if (cached) return NextResponse.json(cached);
 
   const token = await getAccessToken();
   if (!token) {
@@ -87,6 +114,8 @@ export async function GET(req: Request) {
     createdAt: now,
     order: null,
   }));
+
+  setCachedSearch(query, out);
 
   return NextResponse.json(out);
 }

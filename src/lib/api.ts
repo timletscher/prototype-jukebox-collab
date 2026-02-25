@@ -6,6 +6,9 @@ import type {
   QueueListResponse,
   QueueReorderRequest,
   QueueReorderResponse,
+  HistoryCreateRequest,
+  HistoryCreateResponse,
+  HistoryListResponse,
   SearchResponse,
 } from '../types/jukebox';
 
@@ -75,4 +78,28 @@ export async function searchSongs(query: string): Promise<SearchResponse> {
     console.error('searchSongs failed', err);
     return [];
   }
+}
+
+export async function fetchHistory(): Promise<HistoryListResponse> {
+  try {
+    const res = await fetch('/api/history');
+    if (!res.ok) return [];
+    return res.json();
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('fetchHistory failed', err);
+    return [];
+  }
+}
+
+export async function createHistoryEntry(
+  payload: HistoryCreateRequest
+): Promise<HistoryCreateResponse> {
+  const res = await fetch('/api/history', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error('failed to create history entry');
+  return res.json();
 }

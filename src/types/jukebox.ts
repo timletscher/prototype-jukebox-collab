@@ -36,6 +36,25 @@ export type QueueReorderResponse = QueueListResponse;
 export type SearchResponse = QueueItem[];
 export type SearchErrorResponse = ApiError;
 
+export type HistoryItem = {
+  id: string;
+  songId: string;
+  title: string;
+  artist?: string | null;
+  addedBy?: string | null;
+  playedAt: string; // ISO date string
+};
+
+export type HistoryListResponse = HistoryItem[];
+export type HistoryCreateRequest = {
+  songId: string;
+  title: string;
+  artist?: string | null;
+  addedBy?: string | null;
+  playedAt?: string | null;
+};
+export type HistoryCreateResponse = HistoryItem;
+
 export type VoteType = 'thumbsDown' | 'thumbsUp' | 'doubleThumbsUp';
 export type VoteCounts = {
   thumbsDown: number;
