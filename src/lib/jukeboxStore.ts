@@ -58,7 +58,7 @@ export type JukeboxState = {
   castVoteOptimistic: (songId: string, voteType: VoteType, sessionId?: string | null) => void;
   // async remote operations
   loadQueue: () => Promise<void>;
-  addItemRemote: (payload: { title: string; url?: string | null; addedBy?: string | null }) => Promise<QueueItem>;
+  addItemRemote: (payload: { title: string; artist?: string | null; url?: string | null; addedBy?: string | null }) => Promise<QueueItem>;
   removeItemRemote: (id: string) => Promise<boolean>;
   clearQueueRemote: () => Promise<boolean>;
   moveQueueItemRemote: (id: string, direction: QueueReorderDirection) => Promise<void>;
@@ -219,11 +219,12 @@ const useJukeboxStore = create<JukeboxState>((set, get) => ({
     set({ queue: items });
   },
 
-  addItemRemote: async (payload: { title: string; url?: string | null; addedBy?: string | null }) => {
+  addItemRemote: async (payload: { title: string; artist?: string | null; url?: string | null; addedBy?: string | null }) => {
     const tempId = `tmp-${Date.now()}`;
     const temp: ApiQueueItem = {
       id: tempId,
       title: payload.title,
+      artist: payload.artist ?? null,
       url: payload.url ?? null,
       addedBy: payload.addedBy ?? null,
       createdAt: new Date().toISOString(),

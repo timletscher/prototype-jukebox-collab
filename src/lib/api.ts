@@ -65,19 +65,19 @@ export async function reorderQueue(payload: QueueReorderRequest): Promise<QueueR
 
 export async function searchSongs(query: string): Promise<SearchResponse> {
   if (!query.trim()) return [];
-  try {
-    const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-    if (!res.ok) {
-      // eslint-disable-next-line no-console
-      console.warn('searchSongs: non-OK response', res.status);
-      return [];
-    }
-    return res.json();
-  } catch (err) {
+  const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+  if (!res.ok) {
     // eslint-disable-next-line no-console
-    console.error('searchSongs failed', err);
-    return [];
+    console.warn('searchSongs: non-OK response', res.status);
+    throw new Error('search request failed');
   }
+  const json = (await res.json()) as unknown;
+  if (!Array.isArray(json)) {
+    // eslint-disable-next-line no-console
+    console.warn('searchSongs: invalid response');
+    throw new Error('invalid search response');
+  }
+  return json as SearchResponse;
 }
 
 export async function fetchHistory(): Promise<HistoryListResponse> {

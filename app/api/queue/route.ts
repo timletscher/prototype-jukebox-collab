@@ -15,6 +15,7 @@ export async function GET() {
   const out: QueueListResponse = items.map((i) => ({
     id: i.id,
     title: i.title,
+    artist: i.artist ?? null,
     url: i.url ?? null,
     addedBy: i.addedBy ?? null,
     createdAt: i.createdAt.toISOString(),
@@ -41,6 +42,7 @@ export async function POST(req: Request) {
   }
 
   const title = body.title.trim();
+  const artist = body.artist ?? null;
   const url = body.url ?? null;
   const addedBy = body.addedBy ?? null;
 
@@ -48,12 +50,13 @@ export async function POST(req: Request) {
   const nextOrder = (max._max.order ?? 0) + 1;
 
   const created = await prisma.queueItem.create({
-    data: { title, url: url ?? null, addedBy: addedBy ?? null, order: nextOrder },
+    data: { title, artist, url: url ?? null, addedBy: addedBy ?? null, order: nextOrder },
   });
 
   const out: QueueCreateResponse = {
     id: created.id,
     title: created.title,
+    artist: created.artist ?? null,
     url: created.url ?? null,
     addedBy: created.addedBy ?? null,
     createdAt: created.createdAt.toISOString(),

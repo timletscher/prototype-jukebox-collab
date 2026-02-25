@@ -581,6 +581,11 @@ button:disabled {
   color: var(--text-muted);
 }
 
+.queue-item-meta {
+  font-size: var(--text-xs);
+  color: var(--text-dim);
+}
+
 .search-result {
   display: flex;
   gap: var(--spacing-sm);

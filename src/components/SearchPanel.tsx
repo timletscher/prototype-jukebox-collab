@@ -1,67 +1,54 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import useJukeboxStore from "../lib/jukeboxStore";
+import { searchSongs } from "../lib/api";
 import type { QueueItem } from "../types/jukebox";
 
-const MOCK_RESULTS: QueueItem[] = [
-  {
-    id: "mock-1",
-    title: "Neon Skyline",
-    artist: "Night Arcade",
-    url: "https://example.com/preview/neon-skyline",
-    addedBy: null,
-    createdAt: "2026-02-25T00:00:00.000Z",
-    order: null,
-  },
-  {
-    id: "mock-2",
-    title: "Pulse Runner",
-    artist: "Chrome Drive",
-    url: "https://example.com/preview/pulse-runner",
-    addedBy: null,
-    createdAt: "2026-02-25T00:00:00.000Z",
-    order: null,
-  },
-  {
-    id: "mock-3",
-    title: "Violet Drift",
-    artist: "Static Bloom",
-    url: "https://example.com/preview/violet-drift",
-    addedBy: null,
-    createdAt: "2026-02-25T00:00:00.000Z",
-    order: null,
-  },
-];
+const MIN_QUERY_LENGTH = 2;
+const SEARCH_DEBOUNCE_MS = 300;
 
 export default function SearchPanel() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<QueueItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const addItemRemote = useJukeboxStore((s) => s.addItemRemote);
   const user = useJukeboxStore((s) => s.user) || "anonymous";
 
-  const filteredResults = useMemo(() => {
-    const trimmed = query.trim().toLowerCase();
-    if (trimmed.length < 2) return [];
-    return MOCK_RESULTS.filter((item) => {
-      const title = item.title.toLowerCase();
-      const artist = (item.artist ?? "").toLowerCase();
-      return title.includes(trimmed) || artist.includes(trimmed);
-    });
-  }, [query]);
-
   useEffect(() => {
     const trimmed = query.trim();
-    if (trimmed.length < 2) {
+    if (trimmed.length < MIN_QUERY_LENGTH) {
       setResults([]);
       setLoading(false);
+      setError(null);
       return;
     }
-    setLoading(true);
-    setResults(filteredResults);
-    setLoading(false);
-  }, [filteredResults, query]);
+
+    let cancelled = false;
+    const handle = window.setTimeout(async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await searchSongs(trimmed);
+        if (!cancelled) {
+          setResults(data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setResults([]);
+          setError("Search is unavailable right now.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(handle);
+    };
+  }, [query]);
 
   return (
     <section className="panel" aria-labelledby="search-title">
@@ -82,7 +69,8 @@ export default function SearchPanel() {
       </div>
       <ul style={{ marginTop: "var(--spacing-sm)" }} aria-live="polite">
         {loading && <li className="panel-subtitle">Searching...</li>}
-        {!loading && results.length === 0 && query.trim().length >= 2 && (
+        {!loading && error && <li className="panel-subtitle">{error}</li>}
+        {!loading && !error && results.length === 0 && query.trim().length >= MIN_QUERY_LENGTH && (
           <li className="panel-subtitle">No matches yet.</li>
         )}
         {results.map((r) => (
@@ -95,7 +83,12 @@ export default function SearchPanel() {
               type="button"
               onClick={async () => {
                 try {
-                  await addItemRemote({ title: r.title, url: r.url ?? null, addedBy: user });
+                  await addItemRemote({
+                    title: r.title,
+                    artist: r.artist ?? null,
+                    url: r.url ?? null,
+                    addedBy: user,
+                  });
                 } catch (err) {
                   // eslint-disable-next-line no-console
                   console.error("add failed", err);

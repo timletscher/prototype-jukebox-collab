@@ -9,6 +9,36 @@ const SEARCH_CACHE_MAX = 100;
 let cachedToken: { token: string; expiresAt: number } | null = null;
 let searchCache = new Map<string, { expiresAt: number; data: SearchResponse }>();
 
+const mockResults = (now: string): SearchResponse => [
+  {
+    id: "mock-1",
+    title: "Neon Skyline",
+    artist: "Night Arcade",
+    url: "https://example.com/preview/neon-skyline",
+    addedBy: null,
+    createdAt: now,
+    order: null,
+  },
+  {
+    id: "mock-2",
+    title: "Pulse Runner",
+    artist: "Chrome Drive",
+    url: "https://example.com/preview/pulse-runner",
+    addedBy: null,
+    createdAt: now,
+    order: null,
+  },
+  {
+    id: "mock-3",
+    title: "Violet Drift",
+    artist: "Static Bloom",
+    url: "https://example.com/preview/violet-drift",
+    addedBy: null,
+    createdAt: now,
+    order: null,
+  },
+];
+
 const getCachedSearch = (query: string) => {
   const key = query.toLowerCase();
   const cached = searchCache.get(key);
@@ -74,6 +104,13 @@ export async function GET(req: Request) {
 
   const token = await getAccessToken();
   if (!token) {
+    if (process.env.NODE_ENV !== "production") {
+      const now = new Date().toISOString();
+      const out = mockResults(now);
+      setCachedSearch(query, out);
+      return NextResponse.json(out);
+    }
+
     const error: ApiError = { error: "missing Spotify credentials" };
     return NextResponse.json(error, { status: 500 });
   }

@@ -35,6 +35,8 @@ describe("QueuePanel", () => {
     render(<QueuePanel />);
 
     expect(screen.getByText("Pulse Runner")).toBeInTheDocument();
+    expect(screen.getByText("Chrome Drive")).toBeInTheDocument();
+    expect(screen.getByText("Added by tester")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Remove" }));
     const { removeItemRemote } = useJukeboxStore.getState();

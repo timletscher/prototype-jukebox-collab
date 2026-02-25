@@ -16,11 +16,15 @@ function QueueItemView({
   const removeItemRemote = useJukeboxStore((s) => s.removeItemRemote);
   const moveQueueItemRemote = useJukeboxStore((s) => s.moveQueueItemRemote);
   const songLabel = `${item.title}${item.artist ? ` by ${item.artist}` : ""}`;
+  const artistName = item.artist?.trim();
+  const artistLabel = artistName ? artistName : "Unknown artist";
+  const addedByLabel = item.addedBy ? `Added by ${item.addedBy}` : "Added by unknown";
   return (
     <div className="queue-item" role="listitem">
       <div style={{ flex: 1 }}>
         <div className="queue-item-title">{item.title}</div>
-        <div className="queue-item-artist">{item.artist ?? ""}</div>
+        <div className="queue-item-artist">{artistLabel}</div>
+        <div className="queue-item-meta">{addedByLabel}</div>
       </div>
       <div style={{ display: "flex", gap: 8 }}>
         <button

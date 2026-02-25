@@ -10,6 +10,7 @@ datasource db {
 model QueueItem {
   id        String   @id @default(cuid())
   title     String
+  artist    String?
   url       String?
   addedBy   String?
   createdAt DateTime @default(now())
