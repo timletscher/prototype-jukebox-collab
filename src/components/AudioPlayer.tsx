@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { QueueItem } from "../lib/jukeboxStore";
 import useJukeboxStore from "../lib/jukeboxStore";
+import { useVoteRealtime } from "../lib/useRealtime";
 
 const DEFAULT_DURATION_MS = 30000;
 const DEMO_AUDIO_SRC =
@@ -22,11 +23,18 @@ export default function AudioPlayer() {
   const positionMs = useJukeboxStore((s) => s.positionMs);
   const durationMs = useJukeboxStore((s) => s.durationMs);
   const volume = useJukeboxStore((s) => s.volume);
+  const votesBySongId = useJukeboxStore((s) => s.votesBySongId);
+  const userVotesBySongId = useJukeboxStore((s) => s.userVotesBySongId);
   const setCurrentItem = useJukeboxStore((s) => s.setCurrentItem);
   const setIsPlaying = useJukeboxStore((s) => s.setIsPlaying);
   const setPositionMs = useJukeboxStore((s) => s.setPositionMs);
   const setDurationMs = useJukeboxStore((s) => s.setDurationMs);
   const setVolume = useJukeboxStore((s) => s.setVolume);
+  const applyVoteChange = useJukeboxStore((s) => s.applyVoteChange);
+  const castVoteOptimistic = useJukeboxStore((s) => s.castVoteOptimistic);
+  const user = useJukeboxStore((s) => s.user);
+
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -36,6 +44,26 @@ export default function AudioPlayer() {
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const visRafRef = useRef<number | null>(null);
   const autoPlayNextRef = useRef(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const existing = window.localStorage.getItem("jukebox.sessionId");
+      if (existing) {
+        setSessionId(existing);
+        return;
+      }
+      const generated = crypto.randomUUID();
+      window.localStorage.setItem("jukebox.sessionId", generated);
+      setSessionId(generated);
+    } catch {
+      try {
+        setSessionId(crypto.randomUUID());
+      } catch {
+        setSessionId(null);
+      }
+    }
+  }, []);
 
   const stopPlayback = useCallback(() => {
     if (audioRef.current) {
@@ -296,6 +324,25 @@ export default function AudioPlayer() {
   };
   const timeLabel = `${formatTime(positionMs)} / ${formatTime(durationMs)}`;
   const volumeLabel = volume === 0 ? "Mute" : volume < 0.5 ? "Low" : "High";
+  const currentSongId = currentItem?.id ?? null;
+  const voteCounts = useMemo(() => {
+    if (!currentSongId) return { thumbsDown: 0, thumbsUp: 0, doubleThumbsUp: 0 };
+    return votesBySongId[currentSongId] ?? { thumbsDown: 0, thumbsUp: 0, doubleThumbsUp: 0 };
+  }, [currentSongId, votesBySongId]);
+  const userVote = currentSongId ? userVotesBySongId[currentSongId] : undefined;
+
+  useVoteRealtime({
+    sessionId,
+    onVote: (payload) => {
+      if (!payload?.songId) return;
+      applyVoteChange(payload.songId, payload.previousVote ?? null, payload.voteType);
+    },
+  });
+
+  const handleVote = (voteType: "thumbsDown" | "thumbsUp" | "doubleThumbsUp") => {
+    if (!currentSongId || !user) return;
+    castVoteOptimistic(currentSongId, voteType, sessionId ?? null);
+  };
 
   return (
     <section className="panel player">
@@ -367,6 +414,44 @@ export default function AudioPlayer() {
         />
         <div className="time-label">
           {Math.round(volume * 100)}%
+        </div>
+      </div>
+      <div
+        className="vote-row"
+        style={{
+          marginTop: "var(--spacing-sm)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "var(--spacing-sm)",
+        }}
+      >
+        <div className="player-label">Votes</div>
+        <div style={{ display: "flex", gap: "var(--spacing-sm)" }}>
+          <button
+            onClick={() => handleVote("thumbsDown")}
+            className="button-ghost"
+            disabled={!currentSongId || !user}
+            aria-pressed={userVote === "thumbsDown"}
+          >
+            👎 {voteCounts.thumbsDown}
+          </button>
+          <button
+            onClick={() => handleVote("thumbsUp")}
+            className="button-ghost"
+            disabled={!currentSongId || !user}
+            aria-pressed={userVote === "thumbsUp"}
+          >
+            👍 {voteCounts.thumbsUp}
+          </button>
+          <button
+            onClick={() => handleVote("doubleThumbsUp")}
+            className="button-ghost"
+            disabled={!currentSongId || !user}
+            aria-pressed={userVote === "doubleThumbsUp"}
+          >
+            👍👍 {voteCounts.doubleThumbsUp}
+          </button>
         </div>
       </div>
     </section>

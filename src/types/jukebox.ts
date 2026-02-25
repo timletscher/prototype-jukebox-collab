@@ -26,9 +26,22 @@ export type QueueCreateRequest = {
 export type QueueCreateResponse = QueueItem;
 export type QueueDeleteResponse = ApiOk | ApiError;
 export type QueueClearResponse = ApiOk | ApiError;
+export type QueueReorderDirection = 'up' | 'down';
+export type QueueReorderRequest = {
+  id: string;
+  direction: QueueReorderDirection;
+};
+export type QueueReorderResponse = QueueListResponse;
 
 export type SearchResponse = QueueItem[];
 export type SearchErrorResponse = ApiError;
+
+export type VoteType = 'thumbsDown' | 'thumbsUp' | 'doubleThumbsUp';
+export type VoteCounts = {
+  thumbsDown: number;
+  thumbsUp: number;
+  doubleThumbsUp: number;
+};
 
 export type WorkerAction = 'peek' | 'claim' | 'complete';
 export type WorkerRequest = {

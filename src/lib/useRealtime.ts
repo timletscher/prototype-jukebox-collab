@@ -9,9 +9,14 @@ const HEARTBEAT_MS = 30000;
 const PRESENCE_ROOM = "jukebox";
 const QUEUE_CHANNEL = "queue";
 const QUEUE_EVENT = "queue:changed";
+const VOTE_CHANNEL = "votes";
+const VOTE_EVENT = "vote:changed";
+const QUEUE_RECONCILE_MS = 30000;
 
 let queueChannel: RealtimeChannel | null = null;
 let queueChannelReady: Promise<void> | null = null;
+let voteChannel: RealtimeChannel | null = null;
+let voteChannelReady: Promise<void> | null = null;
 
 const getQueueChannel = () => {
   const supabase = getSupabaseClient();
@@ -33,6 +38,26 @@ const getQueueChannel = () => {
   return { channel: queueChannel, ready: queueChannelReady };
 };
 
+const getVoteChannel = () => {
+  const supabase = getSupabaseClient();
+  if (!supabase) return null;
+  if (!voteChannel) {
+    voteChannel = supabase.channel(VOTE_CHANNEL, {
+      config: { broadcast: { ack: true } },
+    });
+  }
+
+  if (!voteChannelReady) {
+    voteChannelReady = new Promise((resolve) => {
+      voteChannel?.subscribe((status) => {
+        if (status === "SUBSCRIBED") resolve();
+      });
+    });
+  }
+
+  return { channel: voteChannel, ready: voteChannelReady };
+};
+
 type PresencePayload = {
   username: string;
   isAdmin: boolean;
@@ -51,6 +76,20 @@ type PresenceOptions = {
 type QueueRealtimeOptions = {
   enabled?: boolean;
   onChange: () => void;
+};
+
+export type VoteRealtimePayload = {
+  songId: string;
+  voteType: "thumbsDown" | "thumbsUp" | "doubleThumbsUp";
+  previousVote?: "thumbsDown" | "thumbsUp" | "doubleThumbsUp" | null;
+  sessionId?: string | null;
+  username?: string | null;
+};
+
+type VoteRealtimeOptions = {
+  enabled?: boolean;
+  sessionId?: string | null;
+  onVote: (payload: VoteRealtimePayload) => void;
 };
 
 export const usePresenceRealtime = ({
@@ -130,12 +169,42 @@ export const useQueueRealtime = ({ enabled = true, onChange }: QueueRealtimeOpti
       if (active) onChange();
     };
 
+    // initial reconciliation on mount/subscribe
+    onChange();
+
     channel.on("broadcast", { event: QUEUE_EVENT }, handler);
+
+    const reconcileInterval = window.setInterval(() => {
+      if (active) onChange();
+    }, QUEUE_RECONCILE_MS);
+
+    return () => {
+      active = false;
+      window.clearInterval(reconcileInterval);
+    };
+  }, [enabled, onChange]);
+};
+
+export const useVoteRealtime = ({ enabled = true, sessionId, onVote }: VoteRealtimeOptions) => {
+  useEffect(() => {
+    if (!enabled) return;
+    const channelInfo = getVoteChannel();
+    if (!channelInfo) return;
+
+    const { channel } = channelInfo;
+    let active = true;
+    const handler = ({ payload }: { payload: VoteRealtimePayload }) => {
+      if (!active) return;
+      if (sessionId && payload?.sessionId === sessionId) return;
+      onVote(payload);
+    };
+
+    channel.on("broadcast", { event: VOTE_EVENT }, handler);
 
     return () => {
       active = false;
     };
-  }, [enabled, onChange]);
+  }, [enabled, onVote, sessionId]);
 };
 
 export const broadcastQueueChange = async () => {
@@ -144,4 +213,12 @@ export const broadcastQueueChange = async () => {
   const { channel, ready } = channelInfo;
   await ready;
   await channel.send({ type: "broadcast", event: QUEUE_EVENT, payload: { ts: Date.now() } });
+};
+
+export const broadcastVoteChange = async (payload: VoteRealtimePayload) => {
+  const channelInfo = getVoteChannel();
+  if (!channelInfo) return;
+  const { channel, ready } = channelInfo;
+  await ready;
+  await channel.send({ type: "broadcast", event: VOTE_EVENT, payload });
 };

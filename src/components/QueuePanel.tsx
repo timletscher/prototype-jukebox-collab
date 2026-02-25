@@ -4,8 +4,17 @@ import React, { useCallback, useEffect } from "react";
 import useJukeboxStore, { QueueItem } from "../lib/jukeboxStore";
 import { useQueueRealtime } from "../lib/useRealtime";
 
-function QueueItemView({ item }: { item: QueueItem }) {
+function QueueItemView({
+  item,
+  isFirst,
+  isLast,
+}: {
+  item: QueueItem;
+  isFirst: boolean;
+  isLast: boolean;
+}) {
   const removeItemRemote = useJukeboxStore((s) => s.removeItemRemote);
+  const moveQueueItemRemote = useJukeboxStore((s) => s.moveQueueItemRemote);
   return (
     <div className="queue-item">
       <div style={{ flex: 1 }}>
@@ -13,6 +22,34 @@ function QueueItemView({ item }: { item: QueueItem }) {
         <div className="queue-item-artist">{item.artist ?? ""}</div>
       </div>
       <div style={{ display: "flex", gap: 8 }}>
+        <button
+          onClick={async () => {
+            try {
+              await moveQueueItemRemote(item.id, "up");
+            } catch (err) {
+              // eslint-disable-next-line no-console
+              console.error("move up failed", err);
+            }
+          }}
+          className="button-ghost"
+          disabled={isFirst}
+        >
+          Up
+        </button>
+        <button
+          onClick={async () => {
+            try {
+              await moveQueueItemRemote(item.id, "down");
+            } catch (err) {
+              // eslint-disable-next-line no-console
+              console.error("move down failed", err);
+            }
+          }}
+          className="button-ghost"
+          disabled={isLast}
+        >
+          Down
+        </button>
         <button
           onClick={async () => {
             try {
@@ -62,8 +99,13 @@ export default function QueuePanel() {
           <div className="queue-empty">Queue Empty</div>
         ) : (
           <div>
-            {queue.map((q) => (
-              <QueueItemView key={q.id} item={q} />
+            {queue.map((q, index) => (
+              <QueueItemView
+                key={q.id}
+                item={q}
+                isFirst={index === 0}
+                isLast={index === queue.length - 1}
+              />
             ))}
           </div>
         )}

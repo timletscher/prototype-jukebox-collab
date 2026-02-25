@@ -1,9 +1,20 @@
 "use client";
 
 import { create } from "zustand";
-import type { QueueItem as ApiQueueItem } from "../types/jukebox";
-import { fetchQueue, addQueueItem, deleteQueueItem, clearQueue as apiClearQueue } from "./api";
-import { broadcastQueueChange } from "./useRealtime";
+import type {
+  QueueItem as ApiQueueItem,
+  QueueReorderDirection,
+  VoteCounts,
+  VoteType,
+} from "../types/jukebox";
+import {
+  fetchQueue,
+  addQueueItem,
+  deleteQueueItem,
+  clearQueue as apiClearQueue,
+  reorderQueue,
+} from "./api";
+import { broadcastQueueChange, broadcastVoteChange } from "./useRealtime";
 
 export type QueueItem = ApiQueueItem;
 
@@ -25,6 +36,8 @@ export type JukeboxState = {
   activeUsers: ActiveUser[];
   activeUserCount: number;
   lastPresenceAt: number | null;
+  votesBySongId: Record<string, VoteCounts>;
+  userVotesBySongId: Record<string, VoteType>;
   setUser: (name: string) => void;
   setQueue: (items: QueueItem[]) => void;
   addItem: (item: QueueItem) => void;
@@ -36,11 +49,15 @@ export type JukeboxState = {
   setDurationMs: (durationMs: number) => void;
   setVolume: (volume: number) => void;
   setActiveUsers: (users: ActiveUser[]) => void;
+  setVoteCounts: (songId: string, counts: VoteCounts) => void;
+  applyVoteChange: (songId: string, previousVote: VoteType | null, nextVote: VoteType) => void;
+  castVoteOptimistic: (songId: string, voteType: VoteType, sessionId?: string | null) => void;
   // async remote operations
   loadQueue: () => Promise<void>;
   addItemRemote: (payload: { title: string; url?: string | null; addedBy?: string | null }) => Promise<QueueItem>;
   removeItemRemote: (id: string) => Promise<boolean>;
   clearQueueRemote: () => Promise<boolean>;
+  moveQueueItemRemote: (id: string, direction: QueueReorderDirection) => Promise<void>;
 };
 
 const getInitialVolume = () => {
@@ -56,6 +73,44 @@ const getInitialVolume = () => {
   }
 };
 
+const emptyVoteCounts = (): VoteCounts => ({
+  thumbsDown: 0,
+  thumbsUp: 0,
+  doubleThumbsUp: 0,
+});
+
+const applyVoteDelta = (
+  counts: VoteCounts,
+  previousVote: VoteType | null,
+  nextVote: VoteType
+): VoteCounts => {
+  const next = { ...counts };
+  if (previousVote === "thumbsDown") next.thumbsDown = Math.max(0, next.thumbsDown - 1);
+  if (previousVote === "thumbsUp") next.thumbsUp = Math.max(0, next.thumbsUp - 1);
+  if (previousVote === "doubleThumbsUp") {
+    next.doubleThumbsUp = Math.max(0, next.doubleThumbsUp - 1);
+  }
+  if (nextVote === "thumbsDown") next.thumbsDown += 1;
+  if (nextVote === "thumbsUp") next.thumbsUp += 1;
+  if (nextVote === "doubleThumbsUp") next.doubleThumbsUp += 1;
+  return next;
+};
+
+const moveQueueItem = (
+  items: QueueItem[],
+  id: string,
+  direction: QueueReorderDirection
+): QueueItem[] => {
+  const index = items.findIndex((item) => item.id === id);
+  if (index === -1) return items;
+  const targetIndex = direction === "up" ? index - 1 : index + 1;
+  if (targetIndex < 0 || targetIndex >= items.length) return items;
+  const next = items.slice();
+  const [moved] = next.splice(index, 1);
+  next.splice(targetIndex, 0, moved);
+  return next;
+};
+
 const useJukeboxStore = create<JukeboxState>((set, get) => ({
   user: undefined,
   queue: [],
@@ -67,6 +122,8 @@ const useJukeboxStore = create<JukeboxState>((set, get) => ({
   activeUsers: [],
   activeUserCount: 0,
   lastPresenceAt: null,
+  votesBySongId: {},
+  userVotesBySongId: {},
   setUser: (name) => set({ user: name }),
   setQueue: (items) => set({ queue: items }),
   addItem: (item) =>
@@ -89,6 +146,31 @@ const useJukeboxStore = create<JukeboxState>((set, get) => ({
   },
   setActiveUsers: (users) =>
     set({ activeUsers: users, activeUserCount: users.length, lastPresenceAt: Date.now() }),
+  setVoteCounts: (songId, counts) =>
+    set((state) => ({ votesBySongId: { ...state.votesBySongId, [songId]: counts } })),
+  applyVoteChange: (songId, previousVote, nextVote) =>
+    set((state) => {
+      const existing = state.votesBySongId[songId] ?? emptyVoteCounts();
+      const updated = applyVoteDelta(existing, previousVote, nextVote);
+      return { votesBySongId: { ...state.votesBySongId, [songId]: updated } };
+    }),
+  castVoteOptimistic: (songId, voteType, sessionId) => {
+    const previousVote = get().userVotesBySongId[songId] ?? null;
+    set((state) => {
+      const existing = state.votesBySongId[songId] ?? emptyVoteCounts();
+      const updated = applyVoteDelta(existing, previousVote, voteType);
+      return {
+        votesBySongId: { ...state.votesBySongId, [songId]: updated },
+        userVotesBySongId: { ...state.userVotesBySongId, [songId]: voteType },
+      };
+    });
+    void broadcastVoteChange({
+      songId,
+      voteType,
+      previousVote,
+      sessionId: sessionId ?? null,
+    });
+  },
 
   // async helpers that talk to the server with optimistic updates
   loadQueue: async () => {
@@ -146,6 +228,20 @@ const useJukeboxStore = create<JukeboxState>((set, get) => ({
       await apiClearQueue();
       await broadcastQueueChange();
       return true;
+    } catch (err) {
+      set({ queue: prev });
+      throw err;
+    }
+  },
+  moveQueueItemRemote: async (id, direction) => {
+    const prev = get().queue;
+    const optimistic = moveQueueItem(prev, id, direction);
+    if (optimistic === prev) return;
+    set({ queue: optimistic });
+    try {
+      const updated = await reorderQueue({ id, direction });
+      set({ queue: updated });
+      await broadcastQueueChange();
     } catch (err) {
       set({ queue: prev });
       throw err;

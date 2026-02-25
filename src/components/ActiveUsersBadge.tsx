@@ -26,6 +26,7 @@ export default function ActiveUsersBadge() {
   const user = useJukeboxStore((s) => s.user);
   const setActiveUsers = useJukeboxStore((s) => s.setActiveUsers);
   const count = useJukeboxStore((s) => s.activeUserCount);
+  const activeUsers = useJukeboxStore((s) => s.activeUsers);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -78,6 +79,15 @@ export default function ActiveUsersBadge() {
   return (
     <div className="active-users">
       {user ? `${count} active` : "Guest"}
+      {user && activeUsers.length > 0 && (
+        <ul className="active-users-list">
+          {activeUsers.map((active) => (
+            <li key={active.sessionId} className="active-users-item">
+              {active.username}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

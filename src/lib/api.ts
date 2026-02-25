@@ -4,6 +4,8 @@ import type {
   QueueCreateResponse,
   QueueDeleteResponse,
   QueueListResponse,
+  QueueReorderRequest,
+  QueueReorderResponse,
   SearchResponse,
 } from '../types/jukebox';
 
@@ -45,6 +47,16 @@ export async function deleteQueueItem(id: string): Promise<QueueDeleteResponse> 
 export async function clearQueue(): Promise<QueueClearResponse> {
   const res = await fetch(`${base}/clear`, { method: 'POST' });
   if (!res.ok) throw new Error('failed to clear');
+  return res.json();
+}
+
+export async function reorderQueue(payload: QueueReorderRequest): Promise<QueueReorderResponse> {
+  const res = await fetch(`${base}/reorder`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error('failed to reorder');
   return res.json();
 }
 
