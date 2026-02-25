@@ -33,6 +33,8 @@ export type JukeboxState = {
   positionMs: number;
   durationMs: number;
   volume: number;
+  currentGenre: string | null;
+  adminUser: string | null;
   activeUsers: ActiveUser[];
   activeUserCount: number;
   lastPresenceAt: number | null;
@@ -48,6 +50,8 @@ export type JukeboxState = {
   setPositionMs: (positionMs: number) => void;
   setDurationMs: (durationMs: number) => void;
   setVolume: (volume: number) => void;
+  setGenre: (genre: string) => void;
+  transferAdmin: (nextAdmin: string) => void;
   setActiveUsers: (users: ActiveUser[]) => void;
   setVoteCounts: (songId: string, counts: VoteCounts) => void;
   applyVoteChange: (songId: string, previousVote: VoteType | null, nextVote: VoteType) => void;
@@ -111,6 +115,9 @@ const moveQueueItem = (
   return next;
 };
 
+const withAdminFlag = (users: ActiveUser[], adminUser: string | null) =>
+  users.map((user) => ({ ...user, isAdmin: Boolean(adminUser && user.username === adminUser) }));
+
 const useJukeboxStore = create<JukeboxState>((set, get) => ({
   user: undefined,
   queue: [],
@@ -119,6 +126,8 @@ const useJukeboxStore = create<JukeboxState>((set, get) => ({
   positionMs: 0,
   durationMs: 30000,
   volume: getInitialVolume(),
+  currentGenre: null,
+  adminUser: null,
   activeUsers: [],
   activeUserCount: 0,
   lastPresenceAt: null,
@@ -144,8 +153,34 @@ const useJukeboxStore = create<JukeboxState>((set, get) => ({
       // ignore persistence errors
     }
   },
+  setGenre: (genre) => {
+    const trimmed = genre.trim();
+    if (!trimmed) return;
+    const user = get().user ?? null;
+    if (!user) return;
+    set((state) => ({
+      currentGenre: trimmed,
+      adminUser: user,
+      activeUsers: withAdminFlag(state.activeUsers, user),
+    }));
+  },
+  transferAdmin: (nextAdmin) => {
+    const trimmed = nextAdmin.trim();
+    if (!trimmed) return;
+    const currentAdmin = get().adminUser;
+    const user = get().user;
+    if (!user || currentAdmin !== user) return;
+    set((state) => ({
+      adminUser: trimmed,
+      activeUsers: withAdminFlag(state.activeUsers, trimmed),
+    }));
+  },
   setActiveUsers: (users) =>
-    set({ activeUsers: users, activeUserCount: users.length, lastPresenceAt: Date.now() }),
+    set((state) => ({
+      activeUsers: withAdminFlag(users, state.adminUser),
+      activeUserCount: users.length,
+      lastPresenceAt: Date.now(),
+    })),
   setVoteCounts: (songId, counts) =>
     set((state) => ({ votesBySongId: { ...state.votesBySongId, [songId]: counts } })),
   applyVoteChange: (songId, previousVote, nextVote) =>

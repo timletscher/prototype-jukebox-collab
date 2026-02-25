@@ -93,6 +93,7 @@ Summary timeline (approx): 48 days total
   - Implement optimistic UI updates for votes and queue reorder
   - Implement presence list with basic active user indicators
   - Add safeguards for reconnection and state reconciliation
+- Status: Completed (multi-window sync verified)
 - Note: Presence runs on a single Supabase Realtime channel (no multi-room yet).
 - Deliverable: multi-client sync local test (two browser windows).
 

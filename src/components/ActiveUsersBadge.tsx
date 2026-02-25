@@ -24,10 +24,12 @@ const getSessionId = () => {
 
 export default function ActiveUsersBadge() {
   const user = useJukeboxStore((s) => s.user);
+  const adminUser = useJukeboxStore((s) => s.adminUser);
   const setActiveUsers = useJukeboxStore((s) => s.setActiveUsers);
   const count = useJukeboxStore((s) => s.activeUserCount);
   const activeUsers = useJukeboxStore((s) => s.activeUsers);
   const [ready, setReady] = useState(false);
+  const isAdmin = Boolean(user && adminUser === user);
 
   useEffect(() => {
     setReady(true);
@@ -47,7 +49,7 @@ export default function ActiveUsersBadge() {
         const res = await fetch("/api/presence", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username: user, sessionId, isAdmin: false }),
+          body: JSON.stringify({ username: user, sessionId, isAdmin }),
         });
         if (!res.ok) return;
         const json = (await res.json()) as { users?: ActiveUser[] };
@@ -66,13 +68,13 @@ export default function ActiveUsersBadge() {
       stopped = true;
       window.clearInterval(interval);
     };
-  }, [ready, setActiveUsers, user]);
+  }, [isAdmin, ready, setActiveUsers, user]);
 
   usePresenceRealtime({
     enabled: HAS_SUPABASE,
     username: user ?? "",
     sessionId: getSessionId() ?? "",
-    isAdmin: false,
+    isAdmin,
     onUsers: setActiveUsers,
   });
 
@@ -83,7 +85,7 @@ export default function ActiveUsersBadge() {
         <ul className="active-users-list">
           {activeUsers.map((active) => (
             <li key={active.sessionId} className="active-users-item">
-              {active.username}
+              {active.username}{active.isAdmin ? " (admin)" : ""}
             </li>
           ))}
         </ul>
