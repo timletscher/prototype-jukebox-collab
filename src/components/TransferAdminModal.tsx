@@ -58,7 +58,7 @@ export default function TransferAdminModal({
           {validTargets.length === 0 ? (
             <div className="panel-subtitle">No other active users yet.</div>
           ) : (
-            validTargets.map((target) => (
+            validTargets.map((target, index) => (
               <label key={target.sessionId} className="transfer-option">
                 <input
                   type="radio"
