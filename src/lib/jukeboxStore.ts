@@ -118,6 +118,12 @@ const moveQueueItem = (
 const withAdminFlag = (users: ActiveUser[], adminUser: string | null) =>
   users.map((user) => ({ ...user, isAdmin: Boolean(adminUser && user.username === adminUser) }));
 
+const canAdmin = (state: { user?: string; adminUser: string | null }) => {
+  if (!state.adminUser) return true;
+  if (!state.user) return false;
+  return state.user === state.adminUser;
+};
+
 const useJukeboxStore = create<JukeboxState>((set, get) => ({
   user: undefined,
   queue: [],
@@ -269,6 +275,9 @@ const useJukeboxStore = create<JukeboxState>((set, get) => ({
     }
   },
   moveQueueItemRemote: async (id, direction) => {
+    if (!canAdmin(get())) {
+      throw new Error("admin required");
+    }
     const prev = get().queue;
     const optimistic = moveQueueItem(prev, id, direction);
     if (optimistic === prev) return;

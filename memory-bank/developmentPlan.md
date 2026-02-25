@@ -101,7 +101,7 @@ Summary timeline (approx): 48 days total
 - Tasks:
   - Implement `GenreAdminBar`, `SetGenreModal`, and `TransferAdminModal`
   - Admin-only actions behind permission checks in `jukeboxStore`
-  - UI flows to set genre and confirm queue transition
+  - UI flows to set genre and confirm queue transition (completed)
 - Deliverable: admin users can modify genre and transfer admin.
 
 ## Phase 5 — Persistence & backend integration (Days 28–33)

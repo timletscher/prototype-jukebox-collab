@@ -56,6 +56,7 @@ export default function GenreAdminBar() {
       <SetGenreModal
         isOpen={showGenreModal}
         onClose={() => setShowGenreModal(false)}
+        currentGenre={currentGenre}
         onSave={(genre) => {
           setGenre(genre);
           setShowGenreModal(false);

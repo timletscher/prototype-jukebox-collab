@@ -572,6 +572,14 @@ button:disabled {
   font-size: var(--text-sm);
 }
 
+.modal-warning {
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-md);
+  border: var(--border-thin) solid var(--chrome-dark);
+  background: var(--bg-medium);
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.4);
+}
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;
