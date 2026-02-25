@@ -1,5 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import prisma from '../../../../src/server/prisma';
+import type { ApiError, ApiOk, QueueDeleteResponse } from '../../../../src/types/jukebox';
 
 export async function DELETE(
   req: NextRequest,
@@ -8,12 +9,17 @@ export async function DELETE(
   const { id } = await context.params;
   const idFromPath = new URL(req.url).pathname.split('/').pop();
   const resolvedId = id ?? idFromPath;
-  if (!resolvedId) return NextResponse.json({ error: 'missing id' }, { status: 400 });
+  if (!resolvedId) {
+    const error: ApiError = { error: 'missing id' };
+    return NextResponse.json(error, { status: 400 });
+  }
 
   try {
     await prisma.queueItem.delete({ where: { id: resolvedId } });
-    return NextResponse.json({ ok: true });
+    const ok: ApiOk = { ok: true };
+    return NextResponse.json(ok);
   } catch {
-    return NextResponse.json({ error: 'not found' }, { status: 404 });
+    const error: QueueDeleteResponse = { error: 'not found' };
+    return NextResponse.json(error, { status: 404 });
   }
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import type { QueueItem } from "../../../src/types/jukebox";
+import type { ApiError, SearchResponse } from "../../../src/types/jukebox";
 
 const TOKEN_URL = "https://accounts.spotify.com/api/token";
 const SEARCH_URL = "https://api.spotify.com/v1/search";
@@ -47,7 +47,8 @@ export async function GET(req: Request) {
 
   const token = await getAccessToken();
   if (!token) {
-    return NextResponse.json({ error: "missing Spotify credentials" }, { status: 500 });
+    const error: ApiError = { error: "missing Spotify credentials" };
+    return NextResponse.json(error, { status: 500 });
   }
 
   const url = new URL(SEARCH_URL);
@@ -60,7 +61,8 @@ export async function GET(req: Request) {
   });
 
   if (!res.ok) {
-    return NextResponse.json({ error: "Spotify search failed" }, { status: 502 });
+    const error: ApiError = { error: "Spotify search failed" };
+    return NextResponse.json(error, { status: 502 });
   }
 
   const json = (await res.json()) as {
@@ -76,7 +78,7 @@ export async function GET(req: Request) {
 
   const items = json.tracks?.items ?? [];
   const now = new Date().toISOString();
-  const out: QueueItem[] = items.map((item) => ({
+  const out: SearchResponse = items.map((item) => ({
     id: item.id,
     title: item.name,
     artist: item.artists?.[0]?.name ?? null,

@@ -1,8 +1,15 @@
-import type { QueueItem } from '../types/jukebox';
+import type {
+  QueueClearResponse,
+  QueueCreateRequest,
+  QueueCreateResponse,
+  QueueDeleteResponse,
+  QueueListResponse,
+  SearchResponse,
+} from '../types/jukebox';
 
 const base = '/api/queue';
 
-export async function fetchQueue(): Promise<QueueItem[]> {
+export async function fetchQueue(): Promise<QueueListResponse> {
   try {
     const res = await fetch(base);
     if (!res.ok) {
@@ -19,7 +26,7 @@ export async function fetchQueue(): Promise<QueueItem[]> {
   }
 }
 
-export async function addQueueItem(payload: { title: string; url?: string | null; addedBy?: string | null }) {
+export async function addQueueItem(payload: QueueCreateRequest): Promise<QueueCreateResponse> {
   const res = await fetch(base, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -29,19 +36,19 @@ export async function addQueueItem(payload: { title: string; url?: string | null
   return res.json();
 }
 
-export async function deleteQueueItem(id: string) {
+export async function deleteQueueItem(id: string): Promise<QueueDeleteResponse> {
   const res = await fetch(`${base}/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error('failed to delete');
   return res.json();
 }
 
-export async function clearQueue() {
+export async function clearQueue(): Promise<QueueClearResponse> {
   const res = await fetch(`${base}/clear`, { method: 'POST' });
   if (!res.ok) throw new Error('failed to clear');
   return res.json();
 }
 
-export async function searchSongs(query: string): Promise<QueueItem[]> {
+export async function searchSongs(query: string): Promise<SearchResponse> {
   if (!query.trim()) return [];
   try {
     const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);

@@ -32,8 +32,8 @@ describe('Queue processing (integration)', () => {
     const claimed = await prisma.queueItem.update({
       where: { id: created.id },
       data: {
-        status: 'PROCESSING' as any,
-        attempts: { increment: 1 } as any,
+        status: 'PROCESSING',
+        attempts: { increment: 1 },
         lastAttemptAt: new Date(),
       },
     });
@@ -43,7 +43,7 @@ describe('Queue processing (integration)', () => {
     // simulate successful completion
     const completed = await prisma.queueItem.update({
       where: { id: created.id },
-      data: { status: 'DONE' as any },
+      data: { status: 'DONE' },
     });
 
     expect(completed.status).toBe('DONE');

@@ -1,15 +1,32 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../server/prisma';
-
-type RequestBody = {
-  action?: 'peek' | 'claim' | 'complete';
-  limit?: number;
-  // for complete: ids to mark done/failed and success flag
-  ids?: string[];
-  success?: boolean;
-};
+import type { QueueItem, QueueStatus, WorkerRequest, WorkerResponse } from '../../../../types/jukebox';
+import type { QueueItem as PrismaQueueItem } from '@prisma/client';
 
 const WORKER_HEADER = 'x-worker-token';
+
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  !!value && typeof value === 'object';
+
+const toQueueStatus = (status: string | null): QueueStatus | null => {
+  if (!status) return null;
+  if (status === 'PENDING' || status === 'PROCESSING' || status === 'DONE' || status === 'FAILED') {
+    return status;
+  }
+  return null;
+};
+
+const toQueueItem = (item: PrismaQueueItem): QueueItem => ({
+  id: item.id,
+  title: item.title,
+  url: item.url ?? null,
+  addedBy: item.addedBy ?? null,
+  createdAt: item.createdAt.toISOString(),
+  order: item.order ?? null,
+  status: toQueueStatus(item.status ?? null),
+  attempts: item.attempts ?? null,
+  lastAttemptAt: item.lastAttemptAt ? item.lastAttemptAt.toISOString() : null,
+});
 
 export async function POST(request: Request) {
   const token = request.headers.get(WORKER_HEADER) ?? '';
@@ -18,9 +35,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
-  let body: RequestBody = {};
+  let body: WorkerRequest = {};
   try {
-    body = (await request.json()) as RequestBody;
+    const parsed = await request.json();
+    if (isObject(parsed)) body = parsed as WorkerRequest;
   } catch {
     // ignore — treat as empty
   }
@@ -46,6 +64,7 @@ export async function POST(request: Request) {
       });
 
       const ids = toClaim.map((i) => i.id);
+      const claimedItems = toClaim.map(toQueueItem);
       if (ids.length > 0) {
         // mark as processing and increment attempts
         await prisma.queueItem.updateMany({
@@ -53,7 +72,8 @@ export async function POST(request: Request) {
           data: { status: 'PROCESSING', attempts: { increment: 1 }, lastAttemptAt: new Date() },
         });
       }
-      return NextResponse.json({ action: 'claimed', count: ids.length, items: toClaim });
+      const response: WorkerResponse = { action: 'claimed', count: ids.length, items: claimedItems };
+      return NextResponse.json(response);
     }
 
     if (body.action === 'complete') {
@@ -64,7 +84,8 @@ export async function POST(request: Request) {
 
       if (body.success) {
         await prisma.queueItem.updateMany({ where: { id: { in: ids } }, data: { status: 'DONE' } });
-        return NextResponse.json({ action: 'completed', count: ids.length });
+        const response: WorkerResponse = { action: 'completed', count: ids.length };
+        return NextResponse.json(response);
       }
 
       // failed: requeue if attempts < MAX_RETRIES, otherwise mark FAILED
@@ -84,7 +105,12 @@ export async function POST(request: Request) {
         await prisma.queueItem.updateMany({ where: { id: { in: failIds } }, data: { status: 'FAILED' } });
       }
 
-      return NextResponse.json({ action: 'complete', retried: retryIds.length, failed: failIds.length });
+      const response: WorkerResponse = {
+        action: 'complete',
+        retried: retryIds.length,
+        failed: failIds.length,
+      };
+      return NextResponse.json(response);
     }
 
     // default: peek
@@ -96,7 +122,12 @@ export async function POST(request: Request) {
       take: limit,
     });
 
-    return NextResponse.json({ action: 'peek', count: items.length, items });
+    const response: WorkerResponse = {
+      action: 'peek',
+      count: items.length,
+      items: items.map(toQueueItem),
+    };
+    return NextResponse.json(response);
   } catch (err) {
     // Log and return 500
     // eslint-disable-next-line no-console
@@ -115,7 +146,12 @@ export async function GET() {
       ],
       take: 20,
     });
-    return NextResponse.json({ action: 'peek', count: items.length, items });
+    const response: WorkerResponse = {
+      action: 'peek',
+      count: items.length,
+      items: items.map(toQueueItem),
+    };
+    return NextResponse.json(response);
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error('worker/process-queue GET error', err);

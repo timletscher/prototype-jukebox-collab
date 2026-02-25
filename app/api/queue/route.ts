@@ -1,10 +1,18 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../src/server/prisma';
-import type { QueueItem } from '../../../src/types/jukebox';
+import type {
+  ApiError,
+  QueueCreateRequest,
+  QueueCreateResponse,
+  QueueListResponse,
+} from '../../../src/types/jukebox';
+
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  !!value && typeof value === 'object';
 
 export async function GET() {
   const items = await prisma.queueItem.findMany({ orderBy: { order: 'asc' } });
-  const out: QueueItem[] = items.map((i) => ({
+  const out: QueueListResponse = items.map((i) => ({
     id: i.id,
     title: i.title,
     url: i.url ?? null,
@@ -17,11 +25,24 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const body = await req.json();
-  const { title, url, addedBy } = body;
-  if (!title || typeof title !== 'string') {
-    return NextResponse.json({ error: 'title is required' }, { status: 400 });
+  let body: QueueCreateRequest | null = null;
+  try {
+    const parsed = await req.json();
+    if (isObject(parsed)) {
+      body = parsed as QueueCreateRequest;
+    }
+  } catch {
+    body = null;
   }
+
+  if (!body || typeof body.title !== 'string' || body.title.trim().length === 0) {
+    const error: ApiError = { error: 'title is required' };
+    return NextResponse.json(error, { status: 400 });
+  }
+
+  const title = body.title.trim();
+  const url = body.url ?? null;
+  const addedBy = body.addedBy ?? null;
 
   const max = await prisma.queueItem.aggregate({ _max: { order: true } });
   const nextOrder = (max._max.order ?? 0) + 1;
@@ -30,7 +51,7 @@ export async function POST(req: Request) {
     data: { title, url: url ?? null, addedBy: addedBy ?? null, order: nextOrder },
   });
 
-  const out: QueueItem = {
+  const out: QueueCreateResponse = {
     id: created.id,
     title: created.title,
     url: created.url ?? null,

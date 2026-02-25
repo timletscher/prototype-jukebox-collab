@@ -71,23 +71,29 @@ export default function AudioPlayer() {
   }, []);
 
   useEffect(() => {
+    const audio = audioRef.current;
+    const ctx = audioCtxRef.current;
+
     return () => {
-      stopPlayback();
-      if (audioRef.current) {
-        audioRef.current.src = "";
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.src = "";
       }
+      setIsPlaying(false);
+      setPositionMs(0);
       if (visRafRef.current) {
         cancelAnimationFrame(visRafRef.current);
         visRafRef.current = null;
       }
-      if (audioCtxRef.current) {
-        audioCtxRef.current.close();
+      if (ctx) {
+        ctx.close();
         audioCtxRef.current = null;
       }
       analyserRef.current = null;
       sourceRef.current = null;
     };
-  }, [stopPlayback]);
+  }, [setIsPlaying, setPositionMs]);
 
   useEffect(() => {
     if (audioRef.current) {

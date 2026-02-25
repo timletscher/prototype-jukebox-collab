@@ -1,26 +1,31 @@
 "use client"
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
+import type { QueueItem, WorkerResponse } from '../src/types/jukebox'
 
-type QueueItem = {
-  id: string
-  status?: string
-  data?: any
+const WORKER_HEADER = 'x-worker-token'
+
+const isApiError = (value: unknown): value is { error: string } =>
+  !!value && typeof value === 'object' && 'error' in value
+
+const getErrorMessage = (value: unknown) => {
+  if (value instanceof Error) return value.message
+  if (typeof value === 'string') return value
+  return 'Unknown error'
 }
 
 export default function QueueManager() {
   const [items, setItems] = useState<QueueItem[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const WORKER_HEADER = 'x-worker-token'
   const [workerToken, setWorkerToken] = useState<string>(() => {
     try {
       return localStorage.getItem('workerToken') || ''
-    } catch (e) {
+    } catch {
       return ''
     }
   })
 
-  async function fetchPeek() {
+  const fetchPeek = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -32,19 +37,20 @@ export default function QueueManager() {
         headers,
         body: JSON.stringify({ action: 'peek' })
       })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json?.error || JSON.stringify(json))
-      setItems(json.items || [])
-    } catch (err: any) {
-      setError(err.message)
+      const json = (await res.json()) as WorkerResponse
+      if (!res.ok || isApiError(json)) throw new Error(isApiError(json) ? json.error : JSON.stringify(json))
+      if ('items' in json) setItems(json.items || [])
+      else setItems([])
+    } catch (err) {
+      setError(getErrorMessage(err))
     } finally {
       setLoading(false)
     }
-  }
+  }, [workerToken])
 
   useEffect(() => {
     fetchPeek()
-  }, [])
+  }, [fetchPeek])
 
   async function claimItem(id: string) {
     setLoading(true)
@@ -57,12 +63,12 @@ export default function QueueManager() {
         headers,
         body: JSON.stringify({ action: 'claim', ids: [id] })
       })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json?.error || JSON.stringify(json))
+      const json = (await res.json()) as WorkerResponse
+      if (!res.ok || isApiError(json)) throw new Error(isApiError(json) ? json.error : JSON.stringify(json))
       // refetch
       await fetchPeek()
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(getErrorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -79,11 +85,11 @@ export default function QueueManager() {
         headers,
         body: JSON.stringify({ action: 'complete', ids: [id], success })
       })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json?.error || JSON.stringify(json))
+      const json = (await res.json()) as WorkerResponse
+      if (!res.ok || isApiError(json)) throw new Error(isApiError(json) ? json.error : JSON.stringify(json))
       await fetchPeek()
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(getErrorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -109,7 +115,7 @@ export default function QueueManager() {
               try {
                 if (workerToken) localStorage.setItem('workerToken', workerToken)
                 else localStorage.removeItem('workerToken')
-              } catch (e) {
+              } catch {
                 /* ignore */
               }
             }}
@@ -145,7 +151,7 @@ export default function QueueManager() {
               <td style={{ padding: 8 }}>{it.id}</td>
               <td style={{ padding: 8 }}>{it.status || 'unknown'}</td>
               <td style={{ padding: 8 }}>
-                <pre style={{ margin: 0, maxHeight: 120, overflow: 'auto' }}>{JSON.stringify(it.data, null, 2)}</pre>
+                <pre style={{ margin: 0, maxHeight: 120, overflow: 'auto' }}>{JSON.stringify(it, null, 2)}</pre>
               </td>
               <td style={{ padding: 8 }}>
                 <button onClick={() => claimItem(it.id)} style={{ marginRight: 8 }}>Claim</button>
