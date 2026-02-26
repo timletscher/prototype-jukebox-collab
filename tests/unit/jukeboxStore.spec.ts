@@ -1,15 +1,7 @@
 import useJukeboxStore from "../../src/lib/jukeboxStore";
+import type { QueueItem } from "../../src/types/jukebox";
 import { reorderQueue } from "../../src/lib/api";
 import { broadcastVoteChange } from "../../src/lib/useRealtime";
-
-type QueueItem = {
-  id: string;
-  title: string;
-  url?: string | null;
-  addedBy?: string | null;
-  createdAt?: string;
-  order?: number | null;
-};
 
 jest.mock("../../src/lib/api", () => ({
   fetchQueue: jest.fn(),
@@ -133,9 +125,10 @@ describe("jukeboxStore", () => {
     store.setUser("Ada");
     useJukeboxStore.setState({ adminUser: "Ada" });
 
+    const now = new Date().toISOString();
     const queue: QueueItem[] = [
-      { id: "a", title: "Song A" },
-      { id: "b", title: "Song B" },
+      { id: "a", title: "Song A", createdAt: now },
+      { id: "b", title: "Song B", createdAt: now },
     ];
     useJukeboxStore.setState({ queue });
 
