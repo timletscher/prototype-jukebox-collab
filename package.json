@@ -4,23 +4,40 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint . --ext .ts,.tsx",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:integration": "jest --runInBand --testPathPattern=tests/integration",
+    "test": "jest --passWithNoTests",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
-    "next": "14.0.0",
+    "@prisma/client": "^4.15.0",
+    "@supabase/supabase-js": "^2.96.0",
+    "howler": "2.2.3",
+    "next": "^16.1.6",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "zustand": "4.4.0",
-    "howler": "2.2.3"
+    "zustand": "4.4.0"
   },
   "devDependencies": {
-    "typescript": "5.5.0",
-    "@types/react": "18.2.21",
+    "@playwright/test": "^1.58.2",
+    "@testing-library/jest-dom": "6.4.2",
+    "@testing-library/react": "14.3.1",
+    "@testing-library/user-event": "14.5.2",
+    "@types/jest": "29.5.3",
     "@types/node": "20.4.2",
-    "eslint": "8.48.0",
-    "eslint-config-next": "14.0.0"
+    "@types/react": "18.2.21",
+    "@typescript-eslint/eslint-plugin": "^8.55.0",
+    "@typescript-eslint/parser": "^8.55.0",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^16.1.6",
+    "jest": "29.6.4",
+    "jest-environment-jsdom": "29.6.4",
+    "jest-environment-node": "29.6.4",
+    "prisma": "^4.15.0",
+    "ts-jest": "29.1.0",
+    "typescript": "^5.9.3"
   }
 }

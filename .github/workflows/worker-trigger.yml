@@ -1,0 +1,33 @@
+name: Worker trigger (manual)
+
+# This workflow invokes the worker endpoint to process or peek the queue.
+# It is `workflow_dispatch`-only by default. To run on a schedule, add a `schedule` entry
+# and ensure `WORKER_TOKEN` and `WORKER_BASE_URL` secrets are set.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  invoke-worker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Invoke processing endpoint (peek)
+        env:
+          WORKER_TOKEN: ${{ secrets.WORKER_TOKEN }}
+          WORKER_BASE_URL: ${{ secrets.WORKER_BASE_URL }}
+        run: |
+          if [ -z "$WORKER_BASE_URL" ] || [ -z "$WORKER_TOKEN" ]; then
+            echo "Set WORKER_BASE_URL and WORKER_TOKEN repository secrets before running this workflow.";
+            exit 1;
+          fi
+
+          echo "Calling $WORKER_BASE_URL/api/worker/process-queue (peek)"
+          curl -sSf -X POST "$WORKER_BASE_URL/api/worker/process-queue" \
+            -H "Content-Type: application/json" \
+            -H "x-worker-token: $WORKER_TOKEN" \
+            -d '{"action":"peek","limit":10}' | jq .
+
+# Example: add scheduled run by uncommenting the below block and set an appropriate cron.
+# on:
+#   schedule:
+#     - cron: '*/15 * * * *' # Every 15 minutes (enable only after setting secrets)
