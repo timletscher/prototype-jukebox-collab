@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import type { ApiError, SearchResponse } from "../../../src/types/jukebox";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 const TOKEN_URL = "https://accounts.spotify.com/api/token";
 const SEARCH_URL = "https://api.spotify.com/v1/search";
 const SEARCH_TTL_MS = 2 * 60 * 1000;

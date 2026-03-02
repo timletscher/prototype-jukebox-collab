@@ -72,12 +72,14 @@ export async function searchSongs(query: string): Promise<SearchResponse> {
     throw new Error('search request failed');
   }
   const json = (await res.json()) as unknown;
-  if (!Array.isArray(json)) {
-    // eslint-disable-next-line no-console
-    console.warn('searchSongs: invalid response');
-    throw new Error('invalid search response');
+  if (Array.isArray(json)) return json as SearchResponse;
+  if (json && typeof json === 'object' && 'error' in json) {
+    const message = String((json as { error?: string }).error ?? 'search error');
+    throw new Error(message);
   }
-  return json as SearchResponse;
+  // eslint-disable-next-line no-console
+  console.warn('searchSongs: invalid response');
+  throw new Error('invalid search response');
 }
 
 export async function fetchHistory(): Promise<HistoryListResponse> {

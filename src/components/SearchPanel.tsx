@@ -87,7 +87,13 @@ export default function SearchPanel() {
       </div>
       <ul style={{ marginTop: "var(--spacing-sm)" }} aria-live="polite">
         {loading && <li className="panel-subtitle">Searching...</li>}
-        {!loading && error && <li className="panel-subtitle">{error}</li>}
+        {!loading && error && (
+          <li className="panel-subtitle">
+            {error === "missing Spotify credentials"
+              ? "Spotify search is not configured yet."
+              : error}
+          </li>
+        )}
         {!loading && !error && results.length === 0 && query.trim().length >= MIN_QUERY_LENGTH && (
           <li className="panel-subtitle">No matches yet.</li>
         )}
