@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import useJukeboxStore from "../lib/jukeboxStore";
 import { searchSongs } from "../lib/api";
 import type { QueueItem } from "../types/jukebox";
@@ -13,8 +13,31 @@ export default function SearchPanel() {
   const [results, setResults] = useState<QueueItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const debounceRef = useRef<number | null>(null);
   const addItemRemote = useJukeboxStore((s) => s.addItemRemote);
   const user = useJukeboxStore((s) => s.user) || "anonymous";
+
+  const runSearch = async (rawQuery: string) => {
+    const trimmed = rawQuery.trim();
+    if (trimmed.length < MIN_QUERY_LENGTH) {
+      setResults([]);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await searchSongs(trimmed);
+      setResults(data);
+    } catch (err) {
+      setResults([]);
+      setError("Search is unavailable right now.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const trimmed = query.trim();
@@ -26,23 +49,12 @@ export default function SearchPanel() {
     }
 
     let cancelled = false;
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
     const handle = window.setTimeout(async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await searchSongs(trimmed);
-        if (!cancelled) {
-          setResults(data);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setResults([]);
-          setError("Search is unavailable right now.");
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+      if (cancelled) return;
+      await runSearch(trimmed);
     }, SEARCH_DEBOUNCE_MS);
+    debounceRef.current = handle;
 
     return () => {
       cancelled = true;
@@ -60,12 +72,18 @@ export default function SearchPanel() {
         id="search-input"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter") return;
+          event.preventDefault();
+          if (debounceRef.current) window.clearTimeout(debounceRef.current);
+          runSearch(query);
+        }}
         placeholder="Search songs"
         aria-describedby="search-help"
         className="input"
       />
       <div id="search-help" className="sr-only">
-        Type at least two characters to see results.
+        Type at least two characters to see results. Press Enter to search immediately.
       </div>
       <ul style={{ marginTop: "var(--spacing-sm)" }} aria-live="polite">
         {loading && <li className="panel-subtitle">Searching...</li>}
