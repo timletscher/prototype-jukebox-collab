@@ -154,6 +154,15 @@ button:hover:not(:disabled) {
 button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  box-shadow: none;
+  filter: none;
+  transform: none;
+}
+
+.button-primary:disabled,
+.button-ghost:disabled {
+  box-shadow: none;
+  filter: none;
 }
 
 .button-primary {
