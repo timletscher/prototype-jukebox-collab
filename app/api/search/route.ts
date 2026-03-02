@@ -97,6 +97,14 @@ const getAccessToken = async () => {
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const query = searchParams.get("q")?.trim() ?? "";
+  const debug = searchParams.get("debug") === "1";
+  if (debug) {
+    return NextResponse.json({
+      hasClientId: Boolean(process.env.SPOTIFY_CLIENT_ID),
+      hasClientSecret: Boolean(process.env.SPOTIFY_CLIENT_SECRET),
+      nodeEnv: process.env.NODE_ENV ?? "unknown",
+    });
+  }
   if (!query) return NextResponse.json([]);
 
   const cached = getCachedSearch(query);
