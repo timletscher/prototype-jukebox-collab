@@ -29,6 +29,9 @@ const toQueueItem = (item: PrismaQueueItem): QueueItem => ({
 });
 
 export async function POST(request: Request) {
+  if (!prisma) {
+    return NextResponse.json({ error: 'database unavailable' }, { status: 503 });
+  }
   const token = request.headers.get(WORKER_HEADER) ?? '';
 
   if (!process.env.WORKER_TOKEN || token !== process.env.WORKER_TOKEN) {
@@ -138,6 +141,9 @@ export async function POST(request: Request) {
 
 export async function GET() {
   // Simple readonly peek for convenience (no auth)
+  if (!prisma) {
+    return NextResponse.json({ error: 'database unavailable' }, { status: 503 });
+  }
   try {
     const items = await prisma.queueItem.findMany({
       orderBy: [

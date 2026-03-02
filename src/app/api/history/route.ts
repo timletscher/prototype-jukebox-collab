@@ -13,6 +13,7 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object';
 
 export async function GET() {
+  if (!prisma) return NextResponse.json([]);
   const items = await prisma.playHistory.findMany({
     orderBy: { playedAt: 'desc' },
     take: HISTORY_LIMIT,
@@ -30,6 +31,10 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  if (!prisma) {
+    const error: ApiError = { error: 'database unavailable' };
+    return NextResponse.json(error, { status: 503 });
+  }
   let body: HistoryCreateRequest | null = null;
   try {
     const parsed = await req.json();

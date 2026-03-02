@@ -6,6 +6,10 @@ export async function DELETE(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  if (!prisma) {
+    const error: ApiError = { error: 'database unavailable' };
+    return NextResponse.json(error, { status: 503 });
+  }
   const { id } = await context.params;
   const idFromPath = new URL(req.url).pathname.split('/').pop();
   const resolvedId = id ?? idFromPath;

@@ -20,6 +20,10 @@ const toQueueResponse = (items: Array<{ id: string; title: string; url: string |
   }));
 
 export async function PATCH(req: Request) {
+  if (!prisma) {
+    const error: ApiError = { error: 'database unavailable' };
+    return NextResponse.json(error, { status: 503 });
+  }
   let body: QueueReorderRequest | null = null;
   try {
     const parsed = await req.json();

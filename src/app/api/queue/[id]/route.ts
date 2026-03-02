@@ -3,6 +3,10 @@ import prisma from '../../../../server/prisma';
 import type { ApiError, ApiOk, QueueDeleteResponse } from '../../../../types/jukebox';
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+  if (!prisma) {
+    const error: ApiError = { error: 'database unavailable' };
+    return NextResponse.json(error, { status: 503 });
+  }
   const { id } = params;
   if (!id) {
     const error: ApiError = { error: 'missing id' };
