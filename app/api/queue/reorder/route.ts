@@ -20,7 +20,8 @@ const toQueueResponse = (items: Array<{ id: string; title: string; url: string |
   }));
 
 export async function PATCH(req: Request) {
-  if (!prisma) {
+  const db = prisma;
+  if (!db) {
     const error: ApiError = { error: 'database unavailable' };
     return NextResponse.json(error, { status: 503 });
   }
@@ -39,7 +40,7 @@ export async function PATCH(req: Request) {
     return NextResponse.json(error, { status: 400 });
   }
 
-  const items = await prisma.queueItem.findMany({
+  const items = await db.queueItem.findMany({
     orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
   });
 
@@ -59,9 +60,9 @@ export async function PATCH(req: Request) {
   const [moved] = reordered.splice(index, 1);
   reordered.splice(targetIndex, 0, moved);
 
-  await prisma.$transaction(
+  await db.$transaction(
     reordered.map((item, orderIndex) =>
-      prisma.queueItem.update({
+      db.queueItem.update({
         where: { id: item.id },
         data: { order: orderIndex + 1 },
       })

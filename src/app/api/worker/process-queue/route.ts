@@ -29,7 +29,8 @@ const toQueueItem = (item: PrismaQueueItem): QueueItem => ({
 });
 
 export async function POST(request: Request) {
-  if (!prisma) {
+  const db = prisma;
+  if (!db) {
     return NextResponse.json({ error: 'database unavailable' }, { status: 503 });
   }
   const token = request.headers.get(WORKER_HEADER) ?? '';
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
 
     if (body.action === 'claim') {
       // fetch pending items in order
-      const toClaim = await prisma.queueItem.findMany({
+      const toClaim = await db.queueItem.findMany({
         where: { status: 'PENDING' },
         orderBy: [
           { order: 'asc' },
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
       const claimedItems = toClaim.map(toQueueItem);
       if (ids.length > 0) {
         // mark as processing and increment attempts
-        await prisma.queueItem.updateMany({
+        await db.queueItem.updateMany({
           where: { id: { in: ids } },
           data: { status: 'PROCESSING', attempts: { increment: 1 }, lastAttemptAt: new Date() },
         });
@@ -86,14 +87,14 @@ export async function POST(request: Request) {
       }
 
       if (body.success) {
-        await prisma.queueItem.updateMany({ where: { id: { in: ids } }, data: { status: 'DONE' } });
+        await db.queueItem.updateMany({ where: { id: { in: ids } }, data: { status: 'DONE' } });
         const response: WorkerResponse = { action: 'completed', count: ids.length };
         return NextResponse.json(response);
       }
 
       // failed: requeue if attempts < MAX_RETRIES, otherwise mark FAILED
       // fetch attempts for the ids
-      const items = await prisma.queueItem.findMany({ where: { id: { in: ids } } });
+      const items = await db.queueItem.findMany({ where: { id: { in: ids } } });
       const retryIds: string[] = [];
       const failIds: string[] = [];
       for (const it of items) {
@@ -102,10 +103,10 @@ export async function POST(request: Request) {
       }
 
       if (retryIds.length > 0) {
-        await prisma.queueItem.updateMany({ where: { id: { in: retryIds } }, data: { status: 'PENDING' } });
+        await db.queueItem.updateMany({ where: { id: { in: retryIds } }, data: { status: 'PENDING' } });
       }
       if (failIds.length > 0) {
-        await prisma.queueItem.updateMany({ where: { id: { in: failIds } }, data: { status: 'FAILED' } });
+        await db.queueItem.updateMany({ where: { id: { in: failIds } }, data: { status: 'FAILED' } });
       }
 
       const response: WorkerResponse = {
@@ -117,7 +118,7 @@ export async function POST(request: Request) {
     }
 
     // default: peek
-    const items = await prisma.queueItem.findMany({
+    const items = await db.queueItem.findMany({
       orderBy: [
         { order: 'asc' },
         { createdAt: 'asc' },
@@ -141,11 +142,12 @@ export async function POST(request: Request) {
 
 export async function GET() {
   // Simple readonly peek for convenience (no auth)
-  if (!prisma) {
+  const db = prisma;
+  if (!db) {
     return NextResponse.json({ error: 'database unavailable' }, { status: 503 });
   }
   try {
-    const items = await prisma.queueItem.findMany({
+    const items = await db.queueItem.findMany({
       orderBy: [
         { order: 'asc' },
         { createdAt: 'asc' },

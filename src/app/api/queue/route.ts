@@ -11,8 +11,9 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object';
 
 export async function GET() {
-  if (!prisma) return NextResponse.json([]);
-  const items = await prisma.queueItem.findMany({ orderBy: { order: 'asc' } });
+  const db = prisma;
+  if (!db) return NextResponse.json([]);
+  const items = await db.queueItem.findMany({ orderBy: { order: 'asc' } });
   const out: QueueListResponse = items.map((i) => ({
     id: i.id,
     title: i.title,
@@ -26,7 +27,8 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  if (!prisma) {
+  const db = prisma;
+  if (!db) {
     const error: ApiError = { error: 'database unavailable' };
     return NextResponse.json(error, { status: 503 });
   }
@@ -49,10 +51,10 @@ export async function POST(req: Request) {
   const url = body.url ?? null;
   const addedBy = body.addedBy ?? null;
 
-  const max = await prisma.queueItem.aggregate({ _max: { order: true } });
+  const max = await db.queueItem.aggregate({ _max: { order: true } });
   const nextOrder = (max._max.order ?? 0) + 1;
 
-  const created = await prisma.queueItem.create({
+  const created = await db.queueItem.create({
     data: { title, url: url ?? null, addedBy: addedBy ?? null, order: nextOrder },
   });
 

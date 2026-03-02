@@ -13,8 +13,9 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object';
 
 export async function GET() {
-  if (!prisma) return NextResponse.json([]);
-  const items = await prisma.playHistory.findMany({
+  const db = prisma;
+  if (!db) return NextResponse.json([]);
+  const items = await db.playHistory.findMany({
     orderBy: { playedAt: 'desc' },
     take: HISTORY_LIMIT,
   });
@@ -31,7 +32,8 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  if (!prisma) {
+  const db = prisma;
+  if (!db) {
     const error: ApiError = { error: 'database unavailable' };
     return NextResponse.json(error, { status: 503 });
   }
@@ -50,7 +52,7 @@ export async function POST(req: Request) {
     return NextResponse.json(error, { status: 400 });
   }
 
-  const created = await prisma.playHistory.create({
+  const created = await db.playHistory.create({
     data: {
       songId: body.songId.trim(),
       title: body.title.trim(),

@@ -3,12 +3,13 @@ import prisma from "../../../../src/server/prisma";
 import type { QueueItem } from "../../../../src/types/jukebox";
 
 export async function POST() {
-  if (!prisma) {
+  const db = prisma;
+  if (!db) {
     return NextResponse.json({ error: 'database unavailable' }, { status: 503 });
   }
-  const max = await prisma.queueItem.aggregate({ _max: { order: true } });
+  const max = await db.queueItem.aggregate({ _max: { order: true } });
   const nextOrder = (max._max.order ?? 0) + 1;
-  const created = await prisma.queueItem.create({
+  const created = await db.queueItem.create({
     data: {
       title: `Test Track ${Date.now()}`,
       url: null,

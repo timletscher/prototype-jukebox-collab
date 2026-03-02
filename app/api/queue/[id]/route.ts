@@ -6,7 +6,8 @@ export async function DELETE(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  if (!prisma) {
+  const db = prisma;
+  if (!db) {
     const error: ApiError = { error: 'database unavailable' };
     return NextResponse.json(error, { status: 503 });
   }
@@ -19,7 +20,7 @@ export async function DELETE(
   }
 
   try {
-    await prisma.queueItem.delete({ where: { id: resolvedId } });
+    await db.queueItem.delete({ where: { id: resolvedId } });
     const ok: ApiOk = { ok: true };
     return NextResponse.json(ok);
   } catch {
